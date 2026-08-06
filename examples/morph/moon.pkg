@@ -1,0 +1,13 @@
+// Example: circle-to-square morph rendered as an SVG frame sequence.
+// Run:  moon run examples/morph
+// Pipe a frame into a file to view it:  moon run examples/morph > frames.txt
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/geom",
+  "lmy271828/moonim/mobject",
+  "lmy271828/moonim/anim",
+  "lmy271828/moonim/backend/svg",
+}
+
+pkgtype(kind: "executable")

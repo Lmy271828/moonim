@@ -1,0 +1,11 @@
+// Example: typeset a formula subset and render it to SVG.
+// Run:  moon run examples/formula
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/mobject",
+  "lmy271828/moonim/tex",
+  "lmy271828/moonim/backend/svg",
+}
+
+pkgtype(kind: "executable")

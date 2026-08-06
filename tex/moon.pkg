@@ -1,0 +1,9 @@
+// Package: formula typesetting. The `FormulaRenderer` trait is the
+// extension point for a future MicroTeX FFI backend (see docs/design.md);
+// `MiniTex` is the built-in subset renderer shipped in v0.1.
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/geom",
+  "moonbitlang/core/debug",
+}
