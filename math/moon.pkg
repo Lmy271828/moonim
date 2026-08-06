@@ -1,0 +1,6 @@
+// Package: basic math types (Vec2, Mat3 affine transform, Color, BBox).
+
+import {
+  "moonbitlang/core/math" @core_math,
+  "moonbitlang/core/debug",
+}
