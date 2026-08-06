@@ -1,0 +1,6 @@
+// Package: bezier curves, vector paths, triangulation and stroke expansion.
+
+import {
+  "lmy271828/moonim/math",
+  "moonbitlang/core/debug",
+}
