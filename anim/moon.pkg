@@ -1,0 +1,8 @@
+// Package: the typed animation algebra (Interpolable, easing, Animation,
+// Scene timeline).
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/geom",
+  "lmy271828/moonim/mobject",
+}
