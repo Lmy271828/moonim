@@ -74,3 +74,55 @@ test "stroke of a straight segment is a rectangle" {
   let tris = triangulate(outline)
   assert_true((mesh_area(outline, tris) - 8.0).abs() < 1.0e-9)
 }
+
+///|
+test "subpaths split on MoveTo" {
+  let p = Path::new()
+  for seg in Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 1.0).segments {
+    p.segments.push(seg)
+  }
+  for seg in Path::rect(@math.Vec2::new(2.0, 0.0), 1.0, 1.0).segments {
+    p.segments.push(seg)
+  }
+  assert_eq(p.subpaths().length(), 2)
+  assert_eq(Path::circle(@math.Vec2::new(0.0, 0.0), 1.0).subpaths().length(), 1)
+  assert_eq(Path::new().subpaths().length(), 0)
+}
+
+///|
+test "align equalizes segment sequences" {
+  let circle = Path::circle(@math.Vec2::new(0.0, 0.0), 1.0)
+  // One closed subpath of 4 cubics vs two open polyline subpaths.
+  let two = Path::new()
+  two.move_to(@math.Vec2::new(0.0, 0.0))
+  two.line_to(@math.Vec2::new(1.0, 0.0))
+  two.line_to(@math.Vec2::new(1.0, 1.0))
+  two.move_to(@math.Vec2::new(2.0, 0.0))
+  two.line_to(@math.Vec2::new(3.0, 0.0))
+  let (a, b) = circle.align(two)
+  assert_eq(a.segments.length(), b.segments.length())
+  assert_true(a.lerp_compatible(b))
+}
+
+///|
+test "align preserves geometry" {
+  let circle = Path::circle(@math.Vec2::new(1.0, 2.0), 1.5)
+  let rect = Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 1.0)
+  let (a, _) = circle.align(rect)
+  match (a.bbox(), circle.bbox()) {
+    (Some(ba), Some(bc)) => {
+      assert_true((ba.min.x - bc.min.x).abs() < 1.0e-9)
+      assert_true((ba.max.x - bc.max.x).abs() < 1.0e-9)
+      assert_true((ba.min.y - bc.min.y).abs() < 1.0e-9)
+      assert_true((ba.max.y - bc.max.y).abs() < 1.0e-9)
+    }
+    _ => abort("expected bboxes")
+  }
+}
+
+///|
+test "align with empty path" {
+  let circle = Path::circle(@math.Vec2::new(0.0, 0.0), 1.0)
+  let (a, b) = Path::new().align(circle)
+  assert_true(a.lerp_compatible(b))
+}

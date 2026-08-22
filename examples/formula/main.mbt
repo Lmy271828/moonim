@@ -3,9 +3,9 @@
 /// the result as an SVG document.
 fn main {
   let renderer = @tex.MiniTex::new()
-  match renderer.render("\\frac{x^2}{2}", 48.0) {
-    Ok(outline) => {
-      let m = @mobject.Mobject::Tex(formula="\\frac{x^2}{2}", outline~)
+  match renderer.render_symbols("\\frac{x^2}{2}", 48.0) {
+    Ok(symbols) => {
+      let m = @mobject.Mobject::tex("\\frac{x^2}{2}", symbols)
       match m.bbox() {
         Some(b) => {
           let shifted = m.transform(

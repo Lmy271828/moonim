@@ -2,6 +2,28 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 新增
+
+- `tex`：`CachedRenderer`，对任意 `FormulaRenderer` 的 LRU 记忆化包装
+  （键为公式与字号的组合哈希），见 docs/design.md「缓存层」。
+- 三层机制异构 morph（docs/design.md §3.1）：
+  - `geom`：`Path::subpaths` 子路径拆分与 `Path::align` 点数对齐
+    （子路径周长排序配对、退化路径凑数、最长曲线细分补齐、
+    LineTo 升阶 / Close 显式化），任意两条路径可点对点插值；
+  - `mobject`：`Tex` 节点携带带标签的符号子结构（`Mobject::tex`）、
+    部件枚举 `parts`、`same_shape` 形状等价、`with_opacity`；
+  - `anim`：`Animation::transform_matching`——key_map 显式映射 →
+    标签最长公共子串 → 形状贪心配对，孤儿 FadeOutToPoint /
+    FadeInFromPoint，匹配计划记忆化；
+  - `tex`：MiniTex 布局盒带符号标签，新增 `render_symbols`。
+- `examples/texmorph`：公式 x^2 ↔ \frac{x^2}{2} 部件匹配变形示例。
+- `tex`：内嵌字形子集——`tools/extract_glyphs.py` 从 Latin Modern
+  Roman/Math 提取 82 个字形（数字、拉丁字母、希腊字母、常用符号）
+  的轮廓与 advance，生成 `tex/glyphs_data.mbt`；MiniTex 布局使用真实
+  字宽，子集外字符回退占位盒。来源与许可证见 docs/porting.md。
+
 ## [0.1.0] - 2026-08-05
 
 工程骨架首次发布。可构建、可测试（27 个用例）、示例可运行。

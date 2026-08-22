@@ -21,26 +21,42 @@ pub impl Interpolable for @math.Color with fn lerp(a, b, t) {
 }
 
 ///|
-/// Structural mobject interpolation: two mobjects with the same shape
-/// (same variant, same segment counts) lerp pointwise; anything else
-/// switches discretely. This is the typed version of Manim's `Transform`
-/// point-matching; a crossfade strategy for mismatched shapes is on the
-/// roadmap (see docs/design.md).
+/// Structural mobject interpolation. Same-variant pairs lerp pointwise;
+/// paths with mismatched segment counts or types are first normalized by
+/// `@geom.Path::align` (docs/design.md §3.1, layer L3), so any two shapes
+/// morph smoothly. Only cross-variant pairs switch discretely.
 pub impl Interpolable for @mobject.Mobject with fn lerp(a, b, t) {
   match (a, b) {
     (
       VMobject(path=p1, fill=f1, stroke=s1),
       VMobject(path=p2, fill=f2, stroke=s2),
-    ) =>
-      if p1.segments.length() == p2.segments.length() {
-        VMobject(
-          path=lerp_path(p1, p2, t),
-          fill=lerp_opt_color(f1, f2, t),
-          stroke=lerp_stroke(s1, s2, t),
-        )
+    ) => {
+      let (pa, pb) = if p1.lerp_compatible(p2) {
+        (p1, p2)
       } else {
-        discrete(a, b, t)
+        p1.align(p2)
       }
+      VMobject(
+        path=lerp_path(pa, pb, t),
+        fill=lerp_opt_color(f1, f2, t),
+        stroke=lerp_stroke(s1, s2, t),
+      )
+    }
+    (
+      Tex(formula=f1, outline=o1, symbols=sy1),
+      Tex(formula=f2, outline=o2, symbols=sy2),
+    ) => {
+      let (oa, ob) = if o1.lerp_compatible(o2) {
+        (o1, o2)
+      } else {
+        o1.align(o2)
+      }
+      Tex(
+        formula=if t < 1.0 { f1 } else { f2 },
+        outline=lerp_path(oa, ob, t),
+        symbols=lerp_symbols(sy1, sy2, t),
+      )
+    }
     (Group(xs), Group(ys)) =>
       if xs.length() == ys.length() {
         let out : Array[@mobject.Mobject] = []
@@ -52,6 +68,43 @@ pub impl Interpolable for @mobject.Mobject with fn lerp(a, b, t) {
         discrete(a, b, t)
       }
     _ => discrete(a, b, t)
+  }
+}
+
+///|
+/// Symbol outlines lerp pairwise when both sides carry the same label
+/// sequence; anything else switches discretely (symbols only feed the
+/// part matching in `Animation::transform_matching`, never the render).
+fn lerp_symbols(
+  a : Array[@mobject.Symbol],
+  b : Array[@mobject.Symbol],
+  t : Double,
+) -> Array[@mobject.Symbol] {
+  let same_labels = a.length() == b.length() &&
+    ({
+      let mut ok = true
+      for i in 0..<a.length() {
+        if a[i].label != b[i].label {
+          ok = false
+        }
+      }
+      ok
+    })
+  if same_labels {
+    let out : Array[@mobject.Symbol] = []
+    for i in 0..<a.length() {
+      let (pa, pb) = if a[i].outline.lerp_compatible(b[i].outline) {
+        (a[i].outline, b[i].outline)
+      } else {
+        a[i].outline.align(b[i].outline)
+      }
+      out.push({ label: a[i].label, outline: lerp_path(pa, pb, t) })
+    }
+    out
+  } else if t < 1.0 {
+    a
+  } else {
+    b
   }
 }
 

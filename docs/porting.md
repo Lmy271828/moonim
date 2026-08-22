@@ -1,9 +1,13 @@
-# 移植声明：mapbox/earcut → geom/earcut.mbt
+# 外部代码与数据来源声明
 
-本文件按移植合规要求，说明 `geom/earcut.mbt` 中移植代码的来源、许可证、
-范围与偏差。
+本文件按移植合规要求，说明项目中外部代码/数据的来源、许可证、范围与偏差：
 
-## 原项目
+- `geom/earcut.mbt`：移植自 mapbox/earcut（见下节）；
+- `tex/glyphs_data.mbt`：提取自 Latin Modern 字体的字形轮廓子集（见末节）。
+
+## 移植声明：mapbox/earcut → geom/earcut.mbt
+
+### 原项目
 
 - **名称**：earcut
 - **链接**：https://github.com/mapbox/earcut
@@ -26,7 +30,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
-## 移植范围
+### 移植范围
 
 - 移植内容：**多边形单环三角化（ear clipping）核心算法**。
   原项目为 JavaScript，本移植以 MoonBit 重写，顶点数据结构从扁平
@@ -34,7 +38,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   游标扫描。
 - 移植文件：`geom/earcut.mbt`（文件头保留原版权声明与来源链接）。
 
-## 对原项目的修改与适配
+### 对原项目的修改与适配
 
 1. 输入改为强类型 `Array[Vec2]`，输出为顶点索引三元组数组
    `Array[(Int, Int, Int)]`（与原项目一致返回索引而非坐标）。
@@ -43,7 +47,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    退化多边形导致死循环；此时返回的三角形可能少于 `n - 2`，已在
    文档注释中明示。
 
-## 尚未移植 / 暂不支持的功能
+### 尚未移植 / 暂不支持的功能
 
 - **带洞多边形**（原项目的 `eliminateHoles` / 桥接算法）；
 - **z-order 哈希加速**（原项目对大多边形的 O(n log n) 优化）——当前
@@ -51,3 +55,19 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **3D 投影三角化**与 **steiner 点 / 结果去退化**（`deviation` 接口）。
 
 后续若补齐带洞三角化，将同步更新本文件与 `geom/earcut.mbt` 文件头。
+
+## 数据来源：Latin Modern 字形子集 → tex/glyphs_data.mbt
+
+- **名称**：Latin Modern Roman / Latin Modern Math
+- **链接**：https://www.gust.org.pl/projects/e-foundry/latin-modern
+- **许可证**：GUST Font License（GFL，自由许可证，允许提取与再分发
+  字形数据，需保留归属声明）
+- **版权**：B. Jackowski 与 J. M. Nowacki（GUST e-foundry）
+
+**提取范围**：`tools/extract_glyphs.py` 用 fontTools 从
+`lmroman10-regular.otf`（拉丁字母、数字、符号）与
+`latinmodern-math.otf`（希腊字母，正文字体缺失时回退）提取 82 个
+字形的三次贝塞尔轮廓与 advance 宽度，归一化到 1em 单位（y 轴向上、
+基线 y=0），生成 `tex/glyphs_data.mbt`。未覆盖字符在排版时回退为
+占位矩形盒。重新生成：`python3 tools/extract_glyphs.py`（需系统
+安装相应字体与 fontTools）。

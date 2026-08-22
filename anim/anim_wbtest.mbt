@@ -71,3 +71,73 @@ test "scene timeline sequencing" {
     None => abort("expected bbox")
   }
 }
+
+///|
+test "mismatched segment counts morph smoothly" {
+  // Before point alignment (L3) this pair fell back to a discrete switch:
+  // 6 segments vs 4.
+  let circle = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let tri_path = @geom.Path::new()
+  tri_path.move_to(@math.Vec2::new(0.0, 1.0))
+  tri_path.line_to(@math.Vec2::new(-1.0, -1.0))
+  tri_path.line_to(@math.Vec2::new(1.0, -1.0))
+  tri_path.close()
+  let tri = @mobject.Mobject::vmobject(tri_path)
+  let mid = Interpolable::lerp(circle, tri, 0.5)
+  assert_true(mid != circle)
+  // The midpoint stays inside the union of both bounding boxes.
+  match (mid.bbox(), circle.bbox(), tri.bbox()) {
+    (Some(mb), Some(cb), Some(tb)) => {
+      assert_true(
+        mb.min.x >= cb.min.x - 1.0e-9 || mb.min.x >= tb.min.x - 1.0e-9,
+      )
+      assert_true(mb.max.x <= 1.0 + 1.0e-9)
+      assert_true(mb.max.y <= 1.0 + 1.0e-9)
+    }
+    _ => abort("expected bboxes")
+  }
+}
+
+///|
+test "transform_matching endpoints and purity" {
+  let a = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let b = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(2.0, 0.0), 1.0, 1.0),
+  )
+  let scene = Scene::new()
+  scene.add_layer(
+    Layer::new(a, [
+      Animation::transform_matching(b, duration=1.0, easing=linear),
+    ]),
+  )
+  // Exact endpoints: start at t = 0, target (structure preserved) at t = 1.
+  assert_eq(scene.render_at(0.0), @mobject.Mobject::group([a]))
+  assert_eq(scene.render_at(1.0), @mobject.Mobject::group([b]))
+  // Pure timeline: same instant, same frame, memoized plan or not.
+  assert_eq(scene.render_at(0.5), scene.render_at(0.5))
+}
+
+///|
+test "transform_matching pairs labels and fades orphans" {
+  let box = @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 2.0)
+  let start = @mobject.Mobject::tex("x+1", [("x", box), ("+", box), ("1", box)])
+  let target = @mobject.Mobject::tex("x", [("x", box)])
+  let scene = Scene::new()
+  scene.add_layer(
+    Layer::new(start, [
+      Animation::transform_matching(target, duration=1.0, easing=linear),
+    ]),
+  )
+  // Mid-frame: 1 matched pair (x -> x) plus 2 fading orphans (+ and 1);
+  // the scene wraps the single layer in an outer group.
+  match scene.render_at(0.5) {
+    Group([Group(children)]) => assert_eq(children.length(), 3)
+    _ => abort("expected layer group")
+  }
+  // Lands exactly on the target.
+  assert_eq(scene.render_at(1.0), @mobject.Mobject::group([target]))
+}

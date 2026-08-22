@@ -45,3 +45,49 @@ test "move center to" {
     None => abort("expected bbox")
   }
 }
+
+///|
+test "same_shape ignores position and scale" {
+  let box1 = Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 2.0),
+  )
+  let box2 = Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(10.0, 5.0), 3.0, 6.0),
+  )
+  assert_true(box1.same_shape(box2))
+  let flat = Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 4.0, 1.0),
+  )
+  assert_true(!box1.same_shape(flat))
+}
+
+///|
+test "parts decompose group and tex" {
+  let g = Mobject::group([
+    Mobject::vmobject(@geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0)),
+    Mobject::vmobject(@geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 1.0)),
+  ])
+  assert_eq(g.parts().length(), 2)
+  let box = @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 2.0)
+  let tex = Mobject::tex("xy", [("x", box), ("y", box)])
+  let parts = tex.parts()
+  assert_eq(parts.length(), 2)
+  assert_eq(parts[0].label, Some("x"))
+  assert_eq(parts[1].label, Some("y"))
+}
+
+///|
+test "with_opacity scales fill and stroke alpha" {
+  let m = Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 1.0),
+    fill=Some(@math.Color::new(1.0, 1.0, 1.0, a=0.5)),
+    stroke=Some((@math.Color::white(), 2.0)),
+  )
+  match m.with_opacity(0.5) {
+    VMobject(fill=Some(c), stroke=Some((sc, _)), ..) => {
+      assert_eq(c.opacity(), 0.25)
+      assert_eq(sc.opacity(), 0.5)
+    }
+    _ => abort("expected vmobject")
+  }
+}

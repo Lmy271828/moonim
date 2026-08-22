@@ -7,14 +7,18 @@ priv enum Node {
 }
 
 ///|
-/// A laid-out rectangle: either a glyph placeholder or a fraction rule.
-/// Glyph boxes stand in for real glyph outlines until the glyph-data
-/// module lands (documented in docs/design.md and README "功能边界").
+/// A laid-out box: a glyph outline from the embedded subset, or a
+/// fraction rule / fallback placeholder rectangle (`glyph = None`).
+/// `label` is the source symbol the box came from (a character, or
+/// "\\frac" for a fraction rule); it feeds symbol-level part matching
+/// (docs/design.md §3.1, layer L1).
 priv struct Box {
   x : Double
   y : Double
   w : Double
   h : Double
+  label : String
+  glyph : GlyphData?
 }
 
 ///|
@@ -214,9 +218,32 @@ fn layout(nodes : Array[Node], size : Double) -> (Double, Array[Box]) {
           // Spaces advance without drawing a box.
           x += 0.3 * size
         } else {
-          // Placeholder glyph box: half-em wide, one em tall.
-          boxes.push({ x, y: 0.0, w: 0.5 * size, h: size })
-          x += 0.5 * size + gap
+          match glyph_data(c) {
+            Some(g) => {
+              // Embedded glyph: real advance, outline drawn at render time.
+              boxes.push({
+                x,
+                y: 0.0,
+                w: g.adv * size,
+                h: size,
+                label: c.to_string(),
+                glyph: Some(g),
+              })
+              x += g.adv * size + gap
+            }
+            None => {
+              // Outside the embedded subset: placeholder half-em box.
+              boxes.push({
+                x,
+                y: 0.0,
+                w: 0.5 * size,
+                h: size,
+                label: c.to_string(),
+                glyph: None,
+              })
+              x += 0.5 * size + gap
+            }
+          }
         }
       Frac(num, den) => {
         let inner = size * 0.75
@@ -227,7 +254,14 @@ fn layout(nodes : Array[Node], size : Double) -> (Double, Array[Box]) {
         place(boxes, bn, x + (w - wn) / 2.0, 0.85 * size)
         place(boxes, bd, x + (w - wd) / 2.0, -1.05 * size)
         // Fraction rule.
-        boxes.push({ x, y: 0.3 * size, w, h: 0.05 * size })
+        boxes.push({
+          x,
+          y: 0.3 * size,
+          w,
+          h: 0.05 * size,
+          label: "\\frac",
+          glyph: None,
+        })
         x += w + gap
       }
       Script(base~, sup~, sub~) => {
@@ -266,6 +300,13 @@ fn layout(nodes : Array[Node], size : Double) -> (Double, Array[Box]) {
 /// Copy `src` boxes into `dst`, offset by (dx, dy).
 fn place(dst : Array[Box], src : Array[Box], dx : Double, dy : Double) -> Unit {
   for b in src {
-    dst.push({ x: b.x + dx, y: b.y + dy, w: b.w, h: b.h })
+    dst.push({
+      x: b.x + dx,
+      y: b.y + dy,
+      w: b.w,
+      h: b.h,
+      label: b.label,
+      glyph: b.glyph,
+    })
   }
 }

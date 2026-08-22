@@ -25,8 +25,10 @@
                  └─────────────┘
 ```
 
-分层依赖单向向下：`anim` 依赖 `mobject`/`geom`/`math`，`backend/svg` 只依赖
-`mobject`。渲染后端可替换（未来的 OpenGL 后端同样只依赖 `mobject`）。
+分层依赖单向向下：`anim` 依赖 `mobject`/`geom`/`math`；`backend/svg` 直接
+依赖 `mobject`/`geom`/`math`（后两者是 `mobject` 公开 API 的一部分），
+不接触 `anim`/`tex`/`cache` 等上层。渲染后端可替换：未来的 OpenGL 后端
+同样只面向场景图这一层，接入时不波及动画与几何。
 
 ## 2. 场景图：ADT + 穷尽性检查
 
@@ -49,8 +51,8 @@ Mobject 变体时，编译器强制在所有 match 分支处理它**。相对 Py
    在时间轴上的提升。`Animation` = duration × easing ×
    `(start, progress) -> current`，`transform_to` 即对两个 Mobject 的
    结构化 lerp。MoonBit 的类型系统在编译期排除"对不兼容对象做 morph"
-   的部分错误（结构上不兼容时退化为离散切换，已在文档与注释中写明；
-   crossfade 策略为 roadmap）。
+   的部分错误（同变体对象经点数对齐后均可平滑 morph，仅跨变体组合
+   退化为离散切换；见 §3.1）。
 
 2. **`render_at(t)` 是纯函数**：场景没有内部播放状态，同一 `(scene, t)`
    永远得到同一结果。这是用"放弃增量计算"换"seek 与缓存的平凡正确性"
@@ -58,9 +60,42 @@ Mobject 变体时，编译器强制在所有 match 分支处理它**。相对 Py
    状态管理负担；本设计反其道而行，并认为对教学/演示级动画引擎，这个
    交换是划算的。
 
-`Animation::transform_to` 要求两个 Mobject 结构兼容（同变体、同段数）
-才能平滑 morph。`geom` 中 `Path::circle` 与 `Path::rect` 都刻意构造为
-4 段三次贝塞尔，保证经典"圆变方"动画点对点插值可用。
+`Animation::transform_to` 对同变体 Mobject 做平滑 morph（VMobject 与
+Tex 的轮廓经 `Path::align` 点数对齐后点对点插值；Group 要求子对象数
+相同，逐子对象递归）；跨变体组合退化为离散切换。`geom` 中
+`Path::circle` 与 `Path::rect` 都刻意构造为 4 段三次贝塞尔，保证经典
+"圆变方"动画点对点插值可用。
+
+### 3.1 公式与异构 morph：三层机制（已实现）
+
+参照 Manim `TransformMatchingTex` 的拆解（manimlib 的
+`animation/transform_matching_parts.py` 与 `mobject/types/
+vectorized_mobject.py` 的 `align_points`），异构对象间的平滑变换
+分三层落地，每层独立交付、独立测试：
+
+- **L3 点数对齐（地基）**：`geom` 的 `Path::align`——两条 Path 的
+  子路径按周长排序后配对，缺侧用退化路径（首条子路径正反向拼接）
+  凑数；曲线条数不等时对较少侧细分补齐（每轮劈当前最长曲线，
+  复用 `CubicBezier::split`）；`LineTo` 升阶为退化三次曲线、`Close`
+  转为显式闭合曲线，使两侧段序列逐段同型。对齐后任意两条 Path 均可
+  点对点 lerp，`Interpolable for Mobject` 对 VMobject/Tex 不再有
+  离散退化。此层与公式无关，所有 VMobject 受益。
+- **L2 部件匹配 + 孤儿淡化**：`anim` 的 `Animation::transform_matching`。
+  匹配依据 `Mobject::same_shape`（平移到中心、按高度归一后逐点比较，
+  点集取自 `Path::to_polyline`）做贪心自动配对，并允许用户显式
+  指定配对；配不上对的孤儿执行 FadeOutToPoint（缩放到目标中心 +
+  透明度渐隐，`Color` 的 alpha 通道直接动画）/ FadeInFromPoint。
+  匹配计划在首次求值时计算一次并记忆化——纯函数 `render_at` 每帧
+  重放 update，而匹配是昂贵且幂等的子计算，与 §4 的缓存策略一致。
+- **L1 符号级匹配（公式专用）**：`Tex` 节点携带带标签的符号子结构
+  （`Mobject::tex` 由 `MiniTex::render_symbols` 的逐符号轮廓构造），
+  两端符号序列做最长公共子串自动配对（difflib `SequenceMatcher`
+  式），叠加用户 `key_map` 显式映射；标签耗尽后回落到 L2 的形状
+  匹配。占位字形盒阶段所有字形盒形状相同，形状匹配按阅读顺序
+  兜底配对，效果已可用；真实字形落地后标签匹配自动更精确。
+
+三层的组合关系：L3 让任意两条路径可插值，L2 在其上做部件级组装，
+L1 只提供 matching 用的标签，不重写下层。
 
 ## 4. 缓存层：显式键控记忆化（参照 Typst/comemo）
 
@@ -73,8 +108,9 @@ Mobject 变体时，编译器强制在所有 match 分支处理它**。相对 Py
 **当前 MoonBit 缺乏过程宏基础设施，无法表达自动依赖追踪**，故退化为
 显式键控：
 
-- 只在昂贵的叶子节点缓存（公式渲染、三角化），键为窄输入的结构哈希
-  （如 `hash_string(formula) × size`）；
+- 只在昂贵的叶子节点缓存，键为窄输入的结构哈希。公式渲染经 `tex` 包的
+  `CachedRenderer`（包装任意 `FormulaRenderer`，键为 `hash_string(formula)`
+  与 `size` 的组合哈希）；三角化的缓存接入留待后续；
 - 失效策略即键不匹配未命中，无约束重放；
 - `LruCache` 容量封顶，超容量淘汰最旧条目。
 
@@ -94,9 +130,11 @@ pub(open) trait FormulaRenderer {
 ```
 
 - **v0.1**：`MiniTex` 填充该接口。支持字符、分组、`\frac`、`^`、`_`、
-  希腊字母子集；布局遵循 TeX box 模型（基线、分数线、上下标抬升），
-  但字形为占位半 em 方盒。换入真实字形轮廓（TTF 解析或内嵌字形数据）
-  是局部改动，不影响 trait 与调用方。
+  希腊字母子集；布局遵循 TeX box 模型（基线、分数线、上下标抬升）。
+  字形为内嵌的 Latin Modern 轮廓子集（82 字形：数字、拉丁字母、
+  希腊字母子集、常用符号，由 `tools/extract_glyphs.py` 生成，
+  见 docs/porting.md）；子集外字符回退为占位半 em 方盒。扩充覆盖
+  范围是重新跑生成脚本的数据改动，不影响 trait 与调用方。
 - **roadmap**：MicroTeX（原 cLaTeXMath，C++17，MIT）FFI 后端。MicroTeX
   把 TeX 排版逻辑与光栅化后端严格分层（`Graphics2D`/`Font` 抽象接口），
   允许把排版结果回调成原始路径数据——实现一个 `MicroTexRenderer`
@@ -121,7 +159,7 @@ pub(open) trait FormulaRenderer {
 |---|---|---|
 | 纯函数时间轴 | 每帧全量求值 | 记忆化叶子节点；动画纯函数性保证缓存正确 |
 | 显式键控缓存 | 粗粒度失效 | 键窄、可控；trait 边界允许未来换 comemo 式实现 |
-| 占位字形盒 | 公式不可用于出片 | 布局已是 TeX box 模型，换字形数据是局部改动 |
-| 结构不兼容 morph 离散切换 | 视觉跳变 | 文档明示；crossfade 策略 roadmap |
+| 字形子集覆盖有限 | 子集外字符回退占位盒 | 扩充是重跑生成脚本的数据改动（docs/porting.md） |
+| 跨变体 morph 离散切换 | 视觉跳变 | 文档明示；同变体内已由三层机制平滑（§3.1） |
 | O(n²) ear clipping | 大多边形慢 | 动画场景多边形小；z-order 哈希为已知优化方向 |
 | bbox 忽略描边宽度 | 边界框略小 | 注释明示近似 |

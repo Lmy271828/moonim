@@ -1,0 +1,13 @@
+// Example: morph one formula into another with transform_matching —
+// matched symbols glide, unmatched ones fade in/out.
+// Run:  moon run examples/texmorph
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/mobject",
+  "lmy271828/moonim/anim",
+  "lmy271828/moonim/tex",
+  "lmy271828/moonim/backend/svg",
+}
+
+pkgtype(kind: "executable")
