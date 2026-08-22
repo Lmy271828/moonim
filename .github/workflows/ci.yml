@@ -28,11 +28,11 @@ jobs:
       - name: Build (all targets)
         run: moon build --target all
 
-      - name: Run example: morph
+      - name: "Run example: morph"
         run: moon run examples/morph | tee morph_frames.txt && grep -q "<svg" morph_frames.txt
 
-      - name: Run example: formula
+      - name: "Run example: formula"
         run: moon run examples/formula | tee formula.svg.txt && grep -q "<svg" formula.svg.txt
 
-      - name: Run example: texmorph
+      - name: "Run example: texmorph"
         run: moon run examples/texmorph | tee texmorph_frames.txt && grep -q "<svg" texmorph_frames.txt
