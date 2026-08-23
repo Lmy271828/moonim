@@ -128,3 +128,16 @@ pub fn Mobject::move_center_to(self : Mobject, target : @math.Vec2) -> Mobject {
     None => self
   }
 }
+
+///|
+/// Scale by `k` around `center` instead of the origin.
+pub fn Mobject::scale_about(
+  self : Mobject,
+  center : @math.Vec2,
+  k : Double,
+) -> Mobject {
+  let mat = @math.Mat3::translate(center.x, center.y)
+    .mul(@math.Mat3::scale(k, k))
+    .mul(@math.Mat3::translate(-center.x, -center.y))
+  self.transform(mat)
+}

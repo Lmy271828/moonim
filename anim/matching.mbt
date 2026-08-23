@@ -240,7 +240,7 @@ fn fade_out_to_point(
   point : @math.Vec2,
   p : Double,
 ) -> @mobject.Mobject {
-  scale_about(m, point, 1.0 - p).with_opacity(1.0 - p)
+  m.scale_about(point, 1.0 - p).with_opacity(1.0 - p)
 }
 
 ///|
@@ -250,17 +250,5 @@ fn fade_in_from_point(
   point : @math.Vec2,
   p : Double,
 ) -> @mobject.Mobject {
-  scale_about(m, point, p).with_opacity(p)
-}
-
-///|
-fn scale_about(
-  m : @mobject.Mobject,
-  center : @math.Vec2,
-  k : Double,
-) -> @mobject.Mobject {
-  let mat = @math.Mat3::translate(center.x, center.y)
-    .mul(@math.Mat3::scale(k, k))
-    .mul(@math.Mat3::translate(-center.x, -center.y))
-  m.transform(mat)
+  m.scale_about(point, p).with_opacity(p)
 }

@@ -138,3 +138,25 @@ pub fn Mobject::with_opacity(self : Mobject, alpha : Double) -> Mobject {
 fn scale_alpha(c : @math.Color, alpha : Double) -> @math.Color {
   @math.Color::new(c.r, c.g, c.b, a=c.a * alpha)
 }
+
+///|
+/// Map every paint color (fill and stroke) through `f`, recursively. Tex
+/// nodes carry no paint of their own and are returned unchanged.
+pub fn Mobject::map_colors(
+  self : Mobject,
+  f : (@math.Color) -> @math.Color,
+) -> Mobject {
+  match self {
+    VMobject(path~, fill~, stroke~) =>
+      VMobject(
+        path~,
+        fill=fill.map(f),
+        stroke=stroke.map(fn(s) {
+          let (c, w) = s
+          (f(c), w)
+        }),
+      )
+    Group(children) => Group(children.map(fn(c) { c.map_colors(f) }))
+    Tex(..) => self
+  }
+}

@@ -141,3 +141,91 @@ test "transform_matching pairs labels and fades orphans" {
   // Lands exactly on the target.
   assert_eq(scene.render_at(1.0), @mobject.Mobject::group([target]))
 }
+
+///|
+test "rate function family endpoints" {
+  // All standard rate functions fix the endpoints 0 -> 0 and 1 -> 1.
+  for f in [rush_into, rush_from, slow_into, double_smooth] {
+    assert_eq(f(0.0), 0.0)
+    assert_eq(f(1.0), 1.0)
+  }
+  assert_eq(there_and_back(0.0), 0.0)
+  assert_eq(there_and_back(0.5), 1.0)
+  assert_eq(there_and_back(1.0), 0.0)
+  assert_eq(there_and_back_with_pause(0.5), 1.0)
+  assert_true(wiggle(0.0).abs() < 1.0e-9)
+  assert_true(wiggle(1.0).abs() < 1.0e-9)
+}
+
+///|
+test "squish and lingering" {
+  let s = squish(linear, a=0.4, b=0.6)
+  assert_eq(s(0.2), 0.0) // before the window: held at func(0)
+  assert_eq(s(0.5), 0.5) // midpoint maps to midpoint
+  assert_eq(s(0.8), 1.0) // after the window: held at func(1)
+  assert_eq(lingering(0.9), 1.0) // target reached at 80%
+  assert_eq(lingering(1.0), 1.0)
+}
+
+///|
+test "exponential decay" {
+  assert_eq(exponential_decay(0.0), 0.0)
+  // 1 - exp(-10): close to 1 but not exactly, by design.
+  assert_true((exponential_decay(1.0) - 1.0).abs() < 1.0e-4)
+}
+
+///|
+test "fade_in ramps opacity 0 to 1" {
+  let rect = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 1.0),
+  )
+  let anim = Animation::fade_in(duration=2.0, easing=linear)
+  match anim.at(rect, 0.0) {
+    VMobject(fill=Some(c), ..) => assert_eq(c.a, 0.0)
+    _ => abort("expected vmobject")
+  }
+  match anim.at(rect, 1.0) {
+    VMobject(fill=Some(c), ..) => assert_eq(c.a, 0.5)
+    _ => abort("expected vmobject")
+  }
+  match anim.at(rect, 2.0) {
+    VMobject(fill=Some(c), ..) => assert_eq(c.a, 1.0)
+    _ => abort("expected vmobject")
+  }
+  // Pure: same instant, same frame.
+  assert_eq(anim.at(rect, 0.7), anim.at(rect, 0.7))
+}
+
+///|
+test "grow_from_center halves the bbox halfway" {
+  let rect = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(-1.0, -1.0), 2.0, 2.0),
+  )
+  let anim = Animation::grow_from_center(duration=1.0, easing=linear)
+  match anim.at(rect, 0.5).bbox() {
+    Some(b) => {
+      assert_true((b.width() - 1.0).abs() < 1.0e-9)
+      assert_true((b.height() - 1.0).abs() < 1.0e-9)
+      // Centered growth: center stays put.
+      let c = b.center()
+      assert_true(c.x.abs() < 1.0e-9)
+      assert_true(c.y.abs() < 1.0e-9)
+    }
+    None => abort("expected bbox")
+  }
+}
+
+///|
+test "rotate swaps bbox extents" {
+  let rect = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(-1.0, -0.5), 2.0, 1.0),
+  )
+  let anim = Animation::rotate(@core_math.PI / 2.0, duration=1.0, easing=linear)
+  match anim.at(rect, 1.0).bbox() {
+    Some(b) => {
+      assert_true((b.width() - 1.0).abs() < 1.0e-9)
+      assert_true((b.height() - 2.0).abs() < 1.0e-9)
+    }
+    None => abort("expected bbox")
+  }
+}

@@ -26,6 +26,20 @@
 - `playground/`：纯静态浏览器 playground——js 目标构建，页面内实时
   预览（SVG 直渲）、公式输入、seek、webm 录制；`main_*.mbt` 按后端
   拆分（`moon.pkg` 的 `targets` 声明），全目标 check/build 不受影响。
+- 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
+  animation 原语）：
+  - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep
+    `6t⁵-15t⁴+10t³`（旧实现为 smoothstep，注释误称与 Manim 一致）；
+    新增 `rush_into` / `rush_from` / `slow_into` / `double_smooth` /
+    `there_and_back` / `there_and_back_with_pause` / `wiggle` /
+    `squish` / `lingering` / `exponential_decay`；
+  - `anim`：`Animation::fade_in` / `fade_out` / `fade_in_from_point` /
+    `fade_out_to_point` / `fade_to_color`（fading.mbt）与
+    `grow_from_center` / `grow_from_point` / `shrink_to_center` /
+    `scale_in_place` / `rotate`（growing.mbt）；
+  - `mobject`：新增公开 `Mobject::scale_about`（matching.mbt 的私有
+    版本上移）与 `Mobject::map_colors`。
+- `docs/design.md`：新增「定位：浏览器内的即时数学动画」一节。
 
 ## [0.1.0] - 2026-08-05
 

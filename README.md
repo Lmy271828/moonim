@@ -15,7 +15,7 @@
 curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
 
 moon check --target all   # 检查（全目标）
-moon test                 # 运行测试（42 个用例）
+moon test                 # 运行测试（48 个用例）
 moon run examples/morph   # 示例一：圆变方动画，输出 SVG 帧序列
 moon run examples/formula # 示例二：排版 \frac{x^2}{2} 并输出 SVG
 moon run examples/texmorph # 示例三：公式 x^2 ↔ \frac{x^2}{2} 部件匹配变形
@@ -36,7 +36,7 @@ moon run examples/morph > frames.txt
 | `math/` | `lmy271828/moonim/math` | Vec2 / Mat3 仿射变换 / Color / BBox |
 | `geom/` | `lmy271828/moonim/geom` | 三次贝塞尔、路径、子路径拆分与点数对齐（`Path::align`）、三角化（earcut 移植）、描边展开 |
 | `mobject/` | `lmy271828/moonim/mobject` | 场景图 ADT：`VMobject` / `Group` / `Tex`（带符号标签），部件枚举与 `same_shape` |
-| `anim/` | `lmy271828/moonim/anim` | `Interpolable` trait、缓动函数、`Animation`（`transform_to` / `transform_matching`）、`Scene` 时间轴 |
+| `anim/` | `lmy271828/moonim/anim` | `Interpolable` trait、速率函数族（smooth/rush/wiggle/…）、`Animation`（`transform_to` / `transform_matching` / fade / grow / rotate）、`Scene` 时间轴 |
 | `tex/` | `lmy271828/moonim/tex` | `FormulaRenderer` trait（扩展点）+ `MiniTex` 子集排版器 + `CachedRenderer` 记忆化包装 |
 | `cache/` | `lmy271828/moonim/cache` | 显式键控 LRU 记忆化（见 design.md「缓存层」） |
 | `backend/svg/` | `lmy271828/moonim/backend/svg` | Mobject 树 → SVG 文档序列化 |
@@ -89,6 +89,12 @@ let svg = @svg.render_svg(scene.render_at(1.0)) // t = 1.0s 处的一帧
 - 结构化插值 morph：任意两条路径经 `Path::align` 点数对齐后点对点变形；
 - 部件匹配变形 `transform_matching`：符号标签 / 形状自动配对 + 孤儿淡化，
   支持公式 A → 公式 B 的灵活变换（见 design.md §3.1）；
+- manimlib 速率函数族：`smooth` / `rush_into` / `rush_from` / `slow_into` /
+  `there_and_back(_with_pause)` / `wiggle` / `squish` / `lingering` /
+  `exponential_decay`；
+- 淡入淡出 / 生长 / 旋转原语：`fade_in` / `fade_out` / `fade_in_from_point` /
+  `fade_out_to_point` / `fade_to_color` / `grow_from_center` / `grow_from_point` /
+  `shrink_to_center` / `scale_in_place` / `rotate`；
 - 公式子集排版：普通字符、`{...}` 分组、`\frac`、`^`、`_`、常用希腊字母命令；
   字形为内嵌 Latin Modern 轮廓子集（82 字形，子集外字符回退占位盒）；
 - SVG 后端：任意时刻场景 → 独立 SVG 文档。
