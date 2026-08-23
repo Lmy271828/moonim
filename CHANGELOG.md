@@ -33,7 +33,9 @@
 - `playground/`：四段归因测量——`prepare`/`frame`/`last_*` API 把场景
   构建移出每帧路径并单独计时，render_at 与 SVG 序列化在引擎侧计时，
   DOM 段在页面侧计时；`?bench=1` 自动跑套件并输出 p50/p95 结果表
-  （可复制为 Markdown）。
+  （可复制为 Markdown）。首次实测（2026-08-23，Chromium 桌面）：四段
+  合计 p95 ≤ 0.5ms，SVG 后端判定为充分，Canvas2D/WebGL 议题冻结，
+  数据与结论固化于 docs/design.md「定位」。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep
