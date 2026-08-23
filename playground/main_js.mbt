@@ -279,6 +279,117 @@ fn build_scene(
 ) -> Result[@anim.Scene, String] {
   match scene_id {
     "bench-light" | "bench-standard" | "bench-heavy" => build_bench(scene_id)
+    "unwrite" => {
+      // The formula writes itself, holds, then retreats (Uncreate).
+      let scene = @anim.Scene::new()
+      let renderer = @tex.MiniTex::new()
+      match tex_at(renderer, a, 64.0, @math.Vec2::new(480.0, 270.0)) {
+        Err(e) => Err(e)
+        Ok(m) => {
+          scene.add_layer(
+            @anim.Layer::new(m, [
+              @anim.Animation::show_creation(duration=1.8),
+              @anim.Animation::wait(duration=0.8),
+              @anim.Animation::unwrite(duration=1.8),
+            ]),
+          )
+          Ok(scene)
+        }
+      }
+    }
+    "gallery" => {
+      // Showcase of the ported primitives (batches 0-2): dashed square
+      // write-on, fade-in-from-point + pulse, wiggle indicate, and a dot
+      // riding a dashed sine track.
+      let scene = @anim.Scene::new()
+      let square = @mobject.Mobject::vmobject(
+        @geom.Path::rect(@math.Vec2::new(180.0, 240.0), 120.0, 120.0).to_dashed(),
+        fill=None,
+        stroke=Some((@math.Color::blue(), 2.0)),
+      )
+      scene.add_layer(
+        @anim.Layer::new(square, [
+          @anim.Animation::show_creation(duration=2.0),
+          @anim.Animation::wait(duration=3.0),
+        ]),
+      )
+      let circle = @mobject.Mobject::vmobject(
+        @geom.Path::circle(@math.Vec2::new(700.0, 320.0), 50.0),
+        fill=Some(@math.Color::green()),
+      )
+      scene.add_layer(
+        @anim.Layer::new(circle, [
+          @anim.Animation::fade_in_from_point(
+            @math.Vec2::new(700.0, 120.0),
+            duration=1.5,
+          ),
+          @anim.Animation::wait(duration=0.5),
+          @anim.Animation::scale_in_place(
+            1.3,
+            duration=1.5,
+            easing=@anim.there_and_back,
+          ),
+          @anim.Animation::wait(duration=1.5),
+        ]),
+      )
+      let tri_path = @geom.Path::new()
+      tri_path.move_to(@math.Vec2::new(480.0, 240.0))
+      tri_path.line_to(@math.Vec2::new(440.0, 180.0))
+      tri_path.line_to(@math.Vec2::new(520.0, 180.0))
+      tri_path.close()
+      let tri = @mobject.Mobject::vmobject(
+        tri_path,
+        fill=Some(@math.Color::red()),
+      )
+      scene.add_layer(
+        @anim.Layer::new(tri, [
+          @anim.Animation::fade_in(duration=1.0),
+          @anim.Animation::wait(duration=1.0),
+          @anim.Animation::rotate(0.4, duration=1.6, easing=fn(t) {
+            @anim.wiggle(t)
+          }),
+          @anim.Animation::wait(duration=1.4),
+        ]),
+      )
+      let sine = @geom.Path::new()
+      for i in 0..<=40 {
+        let x = 80.0 + i.to_double() * 20.0
+        let y = 440.0 +
+          40.0 * @core_math.sin(i.to_double() / 40.0 * 2.0 * @core_math.PI)
+        if i == 0 {
+          sine.move_to(@math.Vec2::new(x, y))
+        } else {
+          sine.line_to(@math.Vec2::new(x, y))
+        }
+      }
+      let track = @mobject.Mobject::vmobject(
+        sine.to_dashed(dash=8.0, gap=6.0),
+        fill=None,
+        stroke=Some((@math.Color::new(0.6, 0.6, 0.65), 1.5)),
+      )
+      scene.add_layer(
+        @anim.Layer::new(track, [
+          @anim.Animation::show_creation(duration=2.5),
+          @anim.Animation::wait(duration=2.5),
+        ]),
+      )
+      let dot = @mobject.Mobject::vmobject(
+        @geom.Path::circle(@math.Vec2::new(80.0, 440.0), 12.0),
+        fill=Some(@math.Color::yellow()),
+      )
+      scene.add_layer(
+        @anim.Layer::new(dot, [
+          @anim.Animation::wait(duration=1.0),
+          @anim.Animation::move_along_path(
+            sine,
+            duration=3.0,
+            easing=@anim.linear,
+          ),
+          @anim.Animation::wait(duration=1.0),
+        ]),
+      )
+      Ok(scene)
+    }
     "write" => {
       // Arc-length creation demo: the formula writes itself (glyph by
       // glyph, layout order), then a dot rides a lap around it.

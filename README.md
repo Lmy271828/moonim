@@ -60,7 +60,8 @@ python3 -m http.server              # 在仓库根目录启动静态服务
 缓存场景（返回构建耗时 ms），`frame(t)` 渲染一帧，`last_svg()` /
 `last_render_ms()` / `last_svg_ms()` 读回结果与分段耗时；`render(...)`
 与 `duration(...)` 为兼容封装。示例场景 id：`morph` / `formula` /
-`texmorph` / `pointer`（指针跟随，交互 env 演示）；性能套件 id：`bench-light`（2 层，图形 morph + 短公式
+`texmorph` / `write`（公式书写 + 沿路径运动）/ `unwrite`（书写后擦除）/
+`gallery`（原语橱窗）/ `pointer`（指针跟随，交互 env 演示）；性能套件 id：`bench-light`（2 层，图形 morph + 短公式
 morph）/ `bench-standard`（5 层，公式 morph + 坐标轴 + 生长/旋转/
 摆动）/ `bench-heavy`（27 层，长公式 morph + 25 个错峰圆 + 持续旋转
 外框）。性能套件忽略公式输入、完全确定，用于跨版本对比帧率（标准见

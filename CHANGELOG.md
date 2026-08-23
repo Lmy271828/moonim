@@ -59,6 +59,9 @@
     `move_along_path`（沿路径按弧长位移）；
   - `playground`：新增 `write` 演示场景（公式书写 + 圆点沿圆轨道
     运动）。
+- `playground`：新增 `unwrite`（公式书写后反向擦除）与 `gallery`
+  （原语橱窗：虚线方形书写、fade_in_from_point + there_and_back 脉冲、
+  wiggle 摆动、圆点沿虚线正弦轨道运动）展示场景。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep
