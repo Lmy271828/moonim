@@ -1,0 +1,10 @@
+// Package: axes, number lines and function plots — the teaching-content
+// body (manimlib `number_line.py` / `coordinate_systems.py` /
+// `functions.py` subset). Tick labels are typeset by MiniTex.
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/geom",
+  "lmy271828/moonim/mobject",
+  "lmy271828/moonim/tex",
+}

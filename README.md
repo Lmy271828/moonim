@@ -15,7 +15,7 @@
 curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
 
 moon check --target all   # 检查（全目标）
-moon test                 # 运行测试（56 个用例）
+moon test                 # 运行测试（62 个用例）
 moon run examples/morph   # 示例一：圆变方动画，输出 SVG 帧序列
 moon run examples/formula # 示例二：排版 \frac{x^2}{2} 并输出 SVG
 moon run examples/texmorph # 示例三：公式 x^2 ↔ \frac{x^2}{2} 部件匹配变形
@@ -35,8 +35,9 @@ moon run examples/morph > frames.txt
 |---|---|---|
 | `math/` | `lmy271828/moonim/math` | Vec2 / Mat3 仿射变换 / Color / BBox |
 | `geom/` | `lmy271828/moonim/geom` | 三次贝塞尔、路径、子路径拆分与点数对齐（`Path::align`）、弧长裁剪（`Path::trim` / `point_at_proportion` / `to_dashed`）、三角化（earcut 移植）、描边展开 |
-| `mobject/` | `lmy271828/moonim/mobject` | 场景图 ADT：`VMobject` / `Group` / `Tex`（带符号标签），部件枚举与 `same_shape` |
+| `mobject/` | `lmy271828/moonim/mobject` | 场景图 ADT：`VMobject` / `Group` / `Tex`（带符号标签），部件枚举与 `same_shape`，`line` / `arrow` 构造器 |
 | `anim/` | `lmy271828/moonim/anim` | `Interpolable` trait、速率函数族（smooth/rush/wiggle/…）、`Animation`（`transform_to` / `transform_matching` / fade / grow / rotate / `show_creation` / `unwrite` / `move_along_path`）、交互 `Env`、`Scene` 时间轴 |
+| `graph/` | `lmy271828/moonim/graph` | 坐标系与函数图像：`axes` / `number_line`（刻度 + MiniTex 数字标签）、`plot`（函数采样成路径）、`map_point` 数据→场景映射 |
 | `tex/` | `lmy271828/moonim/tex` | `FormulaRenderer` trait（扩展点）+ `MiniTex` 子集排版器 + `CachedRenderer` 记忆化包装 |
 | `cache/` | `lmy271828/moonim/cache` | 显式键控 LRU 记忆化（见 design.md「缓存层」） |
 | `backend/svg/` | `lmy271828/moonim/backend/svg` | Mobject 树 → SVG 文档序列化 |
@@ -61,7 +62,7 @@ python3 -m http.server              # 在仓库根目录启动静态服务
 `last_render_ms()` / `last_svg_ms()` 读回结果与分段耗时；`render(...)`
 与 `duration(...)` 为兼容封装。示例场景 id：`morph` / `formula` /
 `texmorph` / `write`（公式书写 + 沿路径运动）/ `unwrite`（书写后擦除）/
-`gallery`（原语橱窗）/ `pointer`（指针跟随，交互 env 演示）；性能套件 id：`bench-light`（2 层，图形 morph + 短公式
+`gallery`（原语橱窗）/ `graph`（坐标系 + 函数图像）/ `pointer`（指针跟随，交互 env 演示）；性能套件 id：`bench-light`（2 层，图形 morph + 短公式
 morph）/ `bench-standard`（5 层，公式 morph + 坐标轴 + 生长/旋转/
 摆动）/ `bench-heavy`（27 层，长公式 morph + 25 个错峰圆 + 持续旋转
 外框）。性能套件忽略公式输入、完全确定，用于跨版本对比帧率（标准见
@@ -97,6 +98,8 @@ let svg = @svg.render_svg(scene.render_at(1.0)) // t = 1.0s 处的一帧
 - 场景图递归变换、边界框计算；
 - 纯函数式动画时间轴：`render_at(t)` 无内部状态，可任意 seek；
 - 结构化插值 morph：任意两条路径经 `Path::align` 点数对齐后点对点变形；
+- 坐标系与函数图像：`axes` / `number_line`（刻度 + MiniTex 数字标签）、
+  `plot` 函数采样成路径、`line` / `arrow` 构造器；
 - 部件匹配变形 `transform_matching`：符号标签 / 形状自动配对 + 孤儿淡化，
   支持公式 A → 公式 B 的灵活变换（见 design.md §3.1）；
 - manimlib 速率函数族：`smooth` / `rush_into` / `rush_from` / `slow_into` /

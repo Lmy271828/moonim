@@ -62,6 +62,16 @@
 - `playground`：新增 `unwrite`（公式书写后反向擦除）与 `gallery`
   （原语橱窗：虚线方形书写、fade_in_from_point + there_and_back 脉冲、
   wiggle 摆动、圆点沿虚线正弦轨道运动）展示场景。
+- 动画原语迁移批次 3（坐标系与函数图像，对照 manimlib
+  `number_line.py` / `coordinate_systems.py` / `functions.py` /
+  `geometry.py` 子集）：
+  - 新包 `graph`：`axes`（双轴 + 刻度 + MiniTex 数字标签，0 只在原点
+    标一次）、`number_line`、`plot`（函数采样为场景坐标路径，可直接
+    show_creation / move_along_path）、`map_point` 数据→场景映射；
+  - `mobject`：`line` / `arrow`（描边线段 + 填充三角箭头，退化情形
+    安全塌缩）构造器；
+  - `playground`：新增 `graph` 场景（坐标系淡入、正弦曲线书写、圆点
+    沿曲线运动、箭头指向曲线上一点）。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep

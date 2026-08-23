@@ -91,3 +91,39 @@ test "with_opacity scales fill and stroke alpha" {
     _ => abort("expected vmobject")
   }
 }
+
+///|
+test "arrow tip lands on the target point" {
+  let arrow = Mobject::arrow(
+    @math.Vec2::new(0.0, 0.0),
+    @math.Vec2::new(100.0, 0.0),
+  )
+  match arrow {
+    Group(children) => assert_eq(children.length(), 2) // shaft + tip
+    _ => abort("expected group")
+  }
+  match arrow.bbox() {
+    Some(b) => {
+      assert_eq(b.max.x, 100.0) // tip apex exactly at b
+      assert_eq(b.min.x, 0.0)
+    }
+    None => abort("expected bbox")
+  }
+  // Degenerate arrows collapse to an empty group instead of NaNs.
+  assert_eq(
+    Mobject::arrow(@math.Vec2::new(1.0, 1.0), @math.Vec2::new(1.0, 1.0)),
+    Group([]),
+  )
+}
+
+///|
+test "line spans its endpoints" {
+  let line = Mobject::line(@math.Vec2::new(1.0, 2.0), @math.Vec2::new(4.0, 6.0))
+  match line.bbox() {
+    Some(b) => {
+      assert_eq(b.min, @math.Vec2::new(1.0, 2.0))
+      assert_eq(b.max, @math.Vec2::new(4.0, 6.0))
+    }
+    None => abort("expected bbox")
+  }
+}

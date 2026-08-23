@@ -279,6 +279,77 @@ fn build_scene(
 ) -> Result[@anim.Scene, String] {
   match scene_id {
     "bench-light" | "bench-standard" | "bench-heavy" => build_bench(scene_id)
+    "graph" => {
+      // Teaching-content demo: axes fade in, a sine curve writes itself,
+      // a dot rides the curve, and an arrow marks a point on it.
+      let scene = @anim.Scene::new()
+      let origin = @math.Vec2::new(480.0, 270.0)
+      let ax = @graph.axes(
+        x_min=-5.0,
+        x_max=5.0,
+        y_min=-2.0,
+        y_max=2.0,
+        origin~,
+        unit=80.0,
+      )
+      scene.add_layer(
+        @anim.Layer::new(ax, [
+          @anim.Animation::fade_in(duration=1.0),
+          @anim.Animation::wait(duration=4.0),
+        ]),
+      )
+      let curve_path = @graph.plot(
+        fn(x) { @core_math.sin(x) },
+        x_min=-5.0,
+        x_max=5.0,
+        origin~,
+        unit=80.0,
+      )
+      let curve = @mobject.Mobject::vmobject(
+        curve_path,
+        fill=None,
+        stroke=Some((@math.Color::yellow(), 2.5)),
+      )
+      scene.add_layer(
+        @anim.Layer::new(curve, [
+          @anim.Animation::wait(duration=0.5),
+          @anim.Animation::show_creation(duration=2.5),
+          @anim.Animation::wait(duration=2.0),
+        ]),
+      )
+      let dot = @mobject.Mobject::vmobject(
+        @geom.Path::circle(
+          @graph.map_point(origin, 80.0, None, -5.0, @core_math.sin(-5.0)),
+          10.0,
+        ),
+        fill=Some(@math.Color::red()),
+      )
+      scene.add_layer(
+        @anim.Layer::new(dot, [
+          @anim.Animation::wait(duration=1.5),
+          @anim.Animation::move_along_path(
+            curve_path,
+            duration=3.0,
+            easing=@anim.linear,
+          ),
+          @anim.Animation::wait(duration=0.5),
+        ]),
+      )
+      let arrow = @mobject.Mobject::arrow(
+        @graph.map_point(origin, 80.0, None, 0.0, 0.0),
+        @graph.map_point(origin, 80.0, None, 2.0, 1.2),
+        color=@math.Color::green(),
+        width=2.5,
+      )
+      scene.add_layer(
+        @anim.Layer::new(arrow, [
+          @anim.Animation::wait(duration=3.5),
+          @anim.Animation::fade_in_from_point(origin, duration=1.0),
+          @anim.Animation::wait(duration=0.5),
+        ]),
+      )
+      Ok(scene)
+    }
     "unwrite" => {
       // The formula writes itself, holds, then retreats (Uncreate).
       let scene = @anim.Scene::new()

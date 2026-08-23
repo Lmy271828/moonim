@@ -40,7 +40,8 @@ moonim 不做"另一个 Manim"。Manim 的生态位是本地 Python 脚本 + 离
   宏、完整 LaTeX 语义）时才启动，wasm 侧永远不走 FFI。
 - **动画原语按批次从 manimlib 迁移，不追求全覆盖**：速率函数族、
   fade/grow/rotate、transform_matching、弧长创建族（Write/Unwrite/
-  MoveAlongPath）已迁移；updater 体系（依赖
+  MoveAlongPath）、坐标系与函数图像（axes/number_line/plot，
+  新包 `graph`）已迁移；updater 体系（依赖
   每帧 mutation 的 `add_updater`）与纯函数时间轴冲突，**明确不移植**。
 - **纯函数 render_at 是定位的基石而非限制**：seek、帧缓存、将来的
   协同编辑与撤销，全部受益于"同一 (scene, t) 恒得同一帧"。
