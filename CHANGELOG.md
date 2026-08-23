@@ -26,6 +26,10 @@
 - `playground/`：纯静态浏览器 playground——js 目标构建，页面内实时
   预览（SVG 直渲）、公式输入、seek、webm 录制；`main_*.mbt` 按后端
   拆分（`moon.pkg` 的 `targets` 声明），全目标 check/build 不受影响。
+- `playground/`：界面重写（卡片式工具栏、16:9 自适应舞台、循环播放、
+  空格/方向键快捷键、播放中实时 fps/帧耗时读数）；新增确定性性能套件
+  `bench-light` / `bench-standard` / `bench-heavy`（忽略公式输入，用于
+  跨版本帧率对比，判断标准见 docs/design.md「定位」）。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep

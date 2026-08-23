@@ -2,59 +2,149 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>moonim playground</title>
 <style>
-  body { background: #1a1a1a; color: #eee; font-family: system-ui, sans-serif;
-         max-width: 1020px; margin: 0 auto; padding: 16px; }
-  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-         margin: 8px 0; }
-  label { font-size: 14px; color: #aaa; }
-  input[type=text] { background: #2a2a2a; color: #eee; border: 1px solid #444;
-                     border-radius: 4px; padding: 6px 8px; width: 220px;
-                     font-family: monospace; }
-  button, select { background: #2a2a2a; color: #eee; border: 1px solid #555;
-                   border-radius: 4px; padding: 6px 14px; cursor: pointer; }
-  button:hover { background: #3a3a3a; }
-  #stage { width: 960px; height: 540px; background: #000; margin-top: 8px; }
-  #stage svg { width: 100%; height: 100%; }
-  #seek { flex: 1; }
-  #status { font-size: 13px; color: #e08080; min-height: 1.2em; }
+  :root {
+    --bg: #14161a;
+    --panel: #1d2026;
+    --border: #2e323a;
+    --text: #e8eaed;
+    --dim: #9aa0aa;
+    --accent: #58c4dc;
+    --accent-dim: #58c4dc33;
+    --error: #e08080;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    max-width: 1060px; margin: 0 auto; padding: 24px 20px 40px;
+  }
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  h1 { font-size: 22px; font-weight: 650; margin: 0; letter-spacing: 0.2px; }
+  h1 .dot { color: var(--accent); }
+  header .tag { font-size: 13px; color: var(--dim); }
+
+  .toolbar {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  label { font-size: 13px; color: var(--dim); display: flex; gap: 7px; align-items: center; }
+  input[type=text], input[type=number], select {
+    background: #262a31; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 9px; font-size: 13px; outline: none;
+  }
+  input[type=text] { font-family: var(--mono); width: 230px; }
+  input[type=number] { width: 62px; font-family: var(--mono); }
+  input:focus, select:focus { border-color: var(--accent); }
+  select { cursor: pointer; }
+  optgroup { background: var(--panel); }
+
+  button {
+    background: #262a31; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 16px; font-size: 13px; cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  button:hover { background: #31363f; border-color: #3d434e; }
+  button.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  button.primary:hover { background: #58c4dc55; }
+  button.toggle.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: default; }
+
+  #seek {
+    flex: 1; min-width: 160px; accent-color: var(--accent);
+    height: 4px; cursor: pointer;
+  }
+  #time { font-family: var(--mono); font-size: 13px; color: var(--dim); min-width: 108px; text-align: right; }
+
+  #stage {
+    width: 100%; aspect-ratio: 16 / 9; background: #000;
+    border: 1px solid var(--border); border-radius: 10px;
+    margin-top: 14px; overflow: hidden;
+    box-shadow: 0 8px 30px #00000055;
+  }
+  #stage svg { width: 100%; height: 100%; display: block; }
+
+  #statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; font-size: 13px; min-height: 1.4em; gap: 16px;
+  }
+  #status { color: var(--error); font-family: var(--mono); }
+  #perf { color: var(--dim); font-family: var(--mono); margin-left: auto; }
+  #perf .good { color: #7ec98f; }
+  #perf .bad { color: var(--error); }
+
+  .hint { margin-top: 14px; font-size: 12px; color: #6a7078; }
+  .hint kbd {
+    background: #262a31; border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-family: var(--mono); font-size: 11px;
+  }
   #canvas { display: none; }
 </style>
 </head>
 <body>
-<h1>moonim playground</h1>
 
-<div class="row">
-  <label>场景
-    <select id="scene">
-      <option value="morph">morph（圆变方）</option>
-      <option value="formula">formula（单公式）</option>
-      <option value="texmorph" selected>texmorph（公式 A → 公式 B）</option>
-    </select>
-  </label>
-  <label id="la">公式 A <input type="text" id="fa" value="x^2"></label>
-  <label id="lb">公式 B <input type="text" id="fb" value="\frac{x^2}{2}"></label>
-  <label>fps <input type="number" id="fps" value="24" min="1" max="60" style="width:60px"></label>
+<header>
+  <h1>moonim<span class="dot">·</span>playground</h1>
+  <span class="tag">浏览器内的即时数学动画 — MoonBit → JS，无服务端</span>
+</header>
+
+<div class="toolbar">
+  <div class="row">
+    <label>场景
+      <select id="scene">
+        <optgroup label="示例">
+          <option value="morph">morph（圆变方）</option>
+          <option value="formula">formula（单公式）</option>
+          <option value="texmorph" selected>texmorph（公式 A → 公式 B）</option>
+        </optgroup>
+        <optgroup label="性能套件（确定性）">
+          <option value="bench-light">bench-light（轻量）</option>
+          <option value="bench-standard">bench-standard（标准）</option>
+          <option value="bench-heavy">bench-heavy（探顶）</option>
+        </optgroup>
+      </select>
+    </label>
+    <label id="la">公式 A <input type="text" id="fa" value="x^2" spellcheck="false"></label>
+    <label id="lb">公式 B <input type="text" id="fb" value="\frac{x^2}{2}" spellcheck="false"></label>
+  </div>
+  <div class="row">
+    <button id="play" class="primary">播放</button>
+    <input type="range" id="seek" min="0" max="1000" value="0">
+    <span id="time">0.00 / 0.00 s</span>
+    <button id="loop" class="toggle" title="循环播放 (L)">循环</button>
+    <label>录制 fps <input type="number" id="fps" value="24" min="1" max="60"></label>
+    <button id="record">录制 webm</button>
+  </div>
 </div>
 
-<div class="row">
-  <button id="play">播放</button>
-  <input type="range" id="seek" min="0" max="1000" value="0">
-  <span id="time">0.00 / 0.00 s</span>
-  <button id="record">录制 webm</button>
-</div>
-
-<div id="status"></div>
 <div id="stage"></div>
+
+<div id="statusbar">
+  <span id="status"></span>
+  <span id="perf"></span>
+</div>
+
+<div class="hint">
+  <kbd>空格</kbd> 播放/暂停 · <kbd>←</kbd><kbd>→</kbd> ±0.05s（<kbd>Shift</kbd> ±0.5s）· <kbd>L</kbd> 循环 ·
+  性能套件是确定性场景，用于跨版本对比帧率
+</div>
+
 <canvas id="canvas" width="960" height="540"></canvas>
 
 <script src="../_build/js/debug/build/playground/playground.js"></script>
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
-const stage = $("stage"), status = $("status"), seek = $("seek");
-let playing = false, t = 0, dur = 0, lastTs = null;
+const stage = $("stage"), status = $("status"), seek = $("seek"), perf = $("perf");
+let playing = false, loop = false, t = 0, dur = 0, lastTs = null;
+// Playback smoothness: EMA of the rAF cadence (attribution across
+// compute/serialize/DOM is a separate, planned measurement).
+let fpsEma = 0, msEma = 0;
 
 function currentInputs() {
   return [$("scene").value, $("fa").value, $("fb").value];
@@ -67,6 +157,7 @@ function refreshDuration() {
 
 function drawFrame(tt) {
   const [s, a, b] = currentInputs();
+  const t0 = performance.now();
   const svg = globalThis.moonim.render(s, a, b, tt);
   if (svg.startsWith("ERROR:")) {
     status.textContent = svg;
@@ -74,7 +165,16 @@ function drawFrame(tt) {
   }
   status.textContent = "";
   stage.innerHTML = svg;
-  return svg;
+  return performance.now() - t0;
+}
+
+function updatePerf(frameMs, rafDelta) {
+  const fps = 1000 / rafDelta;
+  fpsEma = fpsEma ? fpsEma * 0.9 + fps * 0.1 : fps;
+  msEma = msEma ? msEma * 0.9 + frameMs * 0.1 : frameMs;
+  const cls = fpsEma >= 30 ? "good" : "bad";
+  perf.innerHTML = '播放 <span class="' + cls + '">' + fpsEma.toFixed(0) +
+    ' fps</span> · 帧耗时 ' + msEma.toFixed(1) + ' ms';
 }
 
 function updateTime() {
@@ -82,32 +182,61 @@ function updateTime() {
   seek.value = dur > 0 ? Math.round(1000 * t / dur) : 0;
 }
 
+function setPlaying(on) {
+  playing = on;
+  $("play").textContent = on ? "暂停" : "播放";
+  if (on) {
+    if (t >= dur) t = 0;
+    lastTs = null;
+    fpsEma = 0; msEma = 0;
+    requestAnimationFrame(frame);
+  } else {
+    perf.textContent = "";
+  }
+}
+
 function frame(ts) {
   if (!playing) return;
-  if (lastTs !== null) t += (ts - lastTs) / 1000;
+  const delta = lastTs === null ? 16.7 : ts - lastTs;
+  if (lastTs !== null) t += delta / 1000;
   lastTs = ts;
-  if (t >= dur) { t = dur; playing = false; $("play").textContent = "播放"; }
-  drawFrame(t);
+  if (t >= dur) {
+    if (loop && dur > 0) {
+      t = 0;
+    } else {
+      t = dur;
+      drawFrame(t);
+      updateTime();
+      setPlaying(false);
+      return;
+    }
+  }
+  const ms = drawFrame(t);
   updateTime();
+  if (ms !== null) updatePerf(ms, delta);
   if (playing) requestAnimationFrame(frame);
 }
 
-$("play").onclick = () => {
-  playing = !playing;
-  $("play").textContent = playing ? "暂停" : "播放";
-  if (playing) {
-    if (t >= dur) t = 0;
-    lastTs = null;
-    requestAnimationFrame(frame);
-  }
+$("play").onclick = () => setPlaying(!playing);
+
+$("loop").onclick = () => {
+  loop = !loop;
+  $("loop").classList.toggle("on", loop);
 };
 
-seek.oninput = () => { t = dur * seek.value / 1000; drawFrame(t); updateTime(); };
+seek.oninput = () => {
+  t = dur * seek.value / 1000;
+  drawFrame(t);
+  updateTime();
+};
+
+const FORMULA_SCENES = { formula: ["la"], texmorph: ["la", "lb"] };
 
 function onSceneChange() {
   const s = $("scene").value;
-  $("la").style.display = s === "morph" ? "none" : "";
-  $("lb").style.display = s === "texmorph" ? "" : "none";
+  const show = FORMULA_SCENES[s] || [];
+  $("la").style.display = show.includes("la") ? "" : "none";
+  $("lb").style.display = show.includes("lb") ? "" : "none";
   t = 0;
   refreshDuration();
   drawFrame(0);
@@ -116,6 +245,18 @@ function onSceneChange() {
 $("scene").onchange = onSceneChange;
 $("fa").oninput = onSceneChange;
 $("fb").oninput = onSceneChange;
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if (e.code === "Space") { e.preventDefault(); setPlaying(!playing); }
+  else if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
+    e.preventDefault();
+    const step = (e.shiftKey ? 0.5 : 0.05) * (e.code === "ArrowLeft" ? -1 : 1);
+    t = Math.max(0, Math.min(dur, t + step));
+    drawFrame(t);
+    updateTime();
+  } else if (e.code === "KeyL") { $("loop").click(); }
+});
 
 // --- webm export: real-time playback recorded off a canvas ---
 function svgToCanvas(svg, ctx) {
@@ -136,12 +277,20 @@ $("record").onclick = async () => {
   rec.ondataavailable = (e) => chunks.push(e.data);
   const done = new Promise((r) => (rec.onstop = r));
   const [s, a, b] = currentInputs();
-  playing = false; $("play").textContent = "播放";
+  setPlaying(false);
+  $("record").disabled = true;
+  $("record").textContent = "录制中…";
   rec.start();
   for (let i = 0, n = Math.round(dur * fps); i <= n; i++) {
     const tt = Math.min(i / fps, dur);
     const svg = globalThis.moonim.render(s, a, b, tt);
-    if (!svg || svg.startsWith("ERROR:")) { status.textContent = svg || "render error"; rec.stop(); return; }
+    if (!svg || svg.startsWith("ERROR:")) {
+      status.textContent = svg || "render error";
+      rec.stop();
+      $("record").disabled = false;
+      $("record").textContent = "录制 webm";
+      return;
+    }
     stage.innerHTML = svg;
     t = tt; updateTime();
     await svgToCanvas(svg, ctx);
@@ -150,6 +299,8 @@ $("record").onclick = async () => {
   }
   rec.stop();
   await done;
+  $("record").disabled = false;
+  $("record").textContent = "录制 webm";
   const url = URL.createObjectURL(new Blob(chunks, { type: "video/webm" }));
   const link = document.createElement("a");
   link.href = url;

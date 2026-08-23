@@ -9,6 +9,7 @@ import {
   "lmy271828/moonim/anim",
   "lmy271828/moonim/tex",
   "lmy271828/moonim/backend/svg",
+  "moonbitlang/core/math" @core_math,
 }
 
 pkgtype(kind: "executable")

@@ -15,7 +15,7 @@
 curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
 
 moon check --target all   # 检查（全目标）
-moon test                 # 运行测试（48 个用例）
+moon test                 # 运行测试（49 个用例）
 moon run examples/morph   # 示例一：圆变方动画，输出 SVG 帧序列
 moon run examples/formula # 示例二：排版 \frac{x^2}{2} 并输出 SVG
 moon run examples/texmorph # 示例三：公式 x^2 ↔ \frac{x^2}{2} 部件匹配变形
@@ -56,9 +56,13 @@ python3 -m http.server              # 在仓库根目录启动静态服务
 ```
 
 页面通过 `globalThis.moonim.render(scene, formula_a, formula_b, t)` 与
-`duration(...)` 与引擎交互；场景 id：`morph` / `formula` / `texmorph`。
-`main_*.mbt` 按后端拆分（moon.pkg 的 `targets` 声明），非 js 目标只编译
-空壳 main，不引入 js FFI。
+`duration(...)` 与引擎交互。示例场景 id：`morph` / `formula` / `texmorph`；
+性能套件 id：`bench-light`（2 层，图形 morph + 短公式 morph）/
+`bench-standard`（5 层，公式 morph + 坐标轴 + 生长/旋转/摆动）/
+`bench-heavy`（27 层，长公式 morph + 25 个错峰圆 + 持续旋转外框）。
+性能套件忽略公式输入、完全确定，用于跨版本对比帧率（标准见
+design.md「定位」一节）。`main_*.mbt` 按后端拆分（moon.pkg 的 `targets`
+声明），非 js 目标只编译空壳 main，不引入 js FFI。
 
 最小用法：
 
