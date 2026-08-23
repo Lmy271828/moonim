@@ -279,6 +279,35 @@ fn build_scene(
 ) -> Result[@anim.Scene, String] {
   match scene_id {
     "bench-light" | "bench-standard" | "bench-heavy" => build_bench(scene_id)
+    "write" => {
+      // Arc-length creation demo: the formula writes itself (glyph by
+      // glyph, layout order), then a dot rides a lap around it.
+      let scene = @anim.Scene::new()
+      let renderer = @tex.MiniTex::new()
+      match tex_at(renderer, a, 56.0, @math.Vec2::new(480.0, 300.0)) {
+        Err(e) => Err(e)
+        Ok(m) => {
+          scene.add_layer(
+            @anim.Layer::new(m, [
+              @anim.Animation::show_creation(duration=2.5),
+              @anim.Animation::wait(duration=2.0),
+            ]),
+          )
+          let dot = @mobject.Mobject::vmobject(
+            @geom.Path::circle(@math.Vec2::new(600.0, 300.0), 14.0),
+            fill=Some(@math.Color::green()),
+          )
+          let track = @geom.Path::circle(@math.Vec2::new(480.0, 300.0), 120.0)
+          scene.add_layer(
+            @anim.Layer::new(dot, [
+              @anim.Animation::wait(duration=1.5),
+              @anim.Animation::move_along_path(track, duration=3.0),
+            ]),
+          )
+          Ok(scene)
+        }
+      }
+    }
     "pointer" => { // Interaction-env demo (design.md「在线开发与交互外壳」): a dot
       // follows the pointer and a ring reacts to the primary button.
       // Nothing here animates over time — only env drives the frame.

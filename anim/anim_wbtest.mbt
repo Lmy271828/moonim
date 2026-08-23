@@ -261,3 +261,67 @@ test "env reaches update closures; render_at stays pure" {
   // Purity per (scene, t, env): repeated evaluation is identical.
   assert_eq(scene.render_at_env(0.5, env), scene.render_at_env(0.5, env))
 }
+
+///|
+test "show_creation reveals by arc length" {
+  let line = @mobject.Mobject::vmobject(
+    {
+      let p = @geom.Path::new()
+      p.move_to(@math.Vec2::new(0.0, 0.0))
+      p.line_to(@math.Vec2::new(100.0, 0.0))
+      p
+    },
+    fill=None,
+    stroke=Some((@math.Color::white(), 2.0)),
+  )
+  let anim = Animation::show_creation(duration=2.0) // linear easing
+  // Halfway: only the left half of the stroke is drawn.
+  match anim.at(line, 1.0).bbox() {
+    Some(b) => assert_true((b.width() - 50.0).abs() < 1.0)
+    None => abort("expected bbox")
+  }
+  // Nothing drawn at p = 0; the original mobject returns at p = 1.
+  assert_eq(anim.at(line, 0.0).bbox(), None)
+  assert_eq(anim.at(line, 2.0), line)
+}
+
+///|
+test "unwrite retreats from the start" {
+  let line = @mobject.Mobject::vmobject(
+    {
+      let p = @geom.Path::new()
+      p.move_to(@math.Vec2::new(0.0, 0.0))
+      p.line_to(@math.Vec2::new(100.0, 0.0))
+      p
+    },
+    fill=None,
+    stroke=Some((@math.Color::white(), 2.0)),
+  )
+  let anim = Animation::unwrite(duration=2.0)
+  match anim.at(line, 1.0).bbox() {
+    Some(b) => {
+      assert_true((b.min.x - 50.0).abs() < 1.0)
+      assert_true((b.width() - 50.0).abs() < 1.0)
+    }
+    None => abort("expected bbox")
+  }
+  assert_eq(anim.at(line, 2.0).bbox(), None)
+}
+
+///|
+test "move_along_path displaces by the path point" {
+  let track = @geom.Path::new()
+  track.move_to(@math.Vec2::new(0.0, 0.0))
+  track.line_to(@math.Vec2::new(100.0, 0.0))
+  let dot = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(5.0, 5.0), 1.0),
+  )
+  let anim = Animation::move_along_path(track, duration=1.0, easing=linear)
+  match anim.at(dot, 1.0).bbox() {
+    Some(b) => {
+      let c = b.center()
+      assert_true((c.x - 105.0).abs() < 1.0e-9 && (c.y - 5.0).abs() < 1.0e-9)
+    }
+    None => abort("expected bbox")
+  }
+}

@@ -15,7 +15,7 @@
 curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
 
 moon check --target all   # 检查（全目标）
-moon test                 # 运行测试（50 个用例）
+moon test                 # 运行测试（56 个用例）
 moon run examples/morph   # 示例一：圆变方动画，输出 SVG 帧序列
 moon run examples/formula # 示例二：排版 \frac{x^2}{2} 并输出 SVG
 moon run examples/texmorph # 示例三：公式 x^2 ↔ \frac{x^2}{2} 部件匹配变形
@@ -34,9 +34,9 @@ moon run examples/morph > frames.txt
 | 包 | 导入路径 | 职责 |
 |---|---|---|
 | `math/` | `lmy271828/moonim/math` | Vec2 / Mat3 仿射变换 / Color / BBox |
-| `geom/` | `lmy271828/moonim/geom` | 三次贝塞尔、路径、子路径拆分与点数对齐（`Path::align`）、三角化（earcut 移植）、描边展开 |
+| `geom/` | `lmy271828/moonim/geom` | 三次贝塞尔、路径、子路径拆分与点数对齐（`Path::align`）、弧长裁剪（`Path::trim` / `point_at_proportion` / `to_dashed`）、三角化（earcut 移植）、描边展开 |
 | `mobject/` | `lmy271828/moonim/mobject` | 场景图 ADT：`VMobject` / `Group` / `Tex`（带符号标签），部件枚举与 `same_shape` |
-| `anim/` | `lmy271828/moonim/anim` | `Interpolable` trait、速率函数族（smooth/rush/wiggle/…）、`Animation`（`transform_to` / `transform_matching` / fade / grow / rotate）、交互 `Env`、`Scene` 时间轴 |
+| `anim/` | `lmy271828/moonim/anim` | `Interpolable` trait、速率函数族（smooth/rush/wiggle/…）、`Animation`（`transform_to` / `transform_matching` / fade / grow / rotate / `show_creation` / `unwrite` / `move_along_path`）、交互 `Env`、`Scene` 时间轴 |
 | `tex/` | `lmy271828/moonim/tex` | `FormulaRenderer` trait（扩展点）+ `MiniTex` 子集排版器 + `CachedRenderer` 记忆化包装 |
 | `cache/` | `lmy271828/moonim/cache` | 显式键控 LRU 记忆化（见 design.md「缓存层」） |
 | `backend/svg/` | `lmy271828/moonim/backend/svg` | Mobject 树 → SVG 文档序列化 |
@@ -104,6 +104,9 @@ let svg = @svg.render_svg(scene.render_at(1.0)) // t = 1.0s 处的一帧
 - 淡入淡出 / 生长 / 旋转原语：`fade_in` / `fade_out` / `fade_in_from_point` /
   `fade_out_to_point` / `fade_to_color` / `grow_from_center` / `grow_from_point` /
   `shrink_to_center` / `scale_in_place` / `rotate`；
+- 弧长创建族原语（`Path::trim` 按弧长裁剪为使能件）：`show_creation`
+  （Write：描边渐显，公式按字形顺序书写）/ `unwrite`（反向擦除）/
+  `move_along_path`（沿路径运动）/ `Path::to_dashed`（虚线化）；
 - 公式子集排版：普通字符、`{...}` 分组、`\frac`、`^`、`_`、常用希腊字母命令；
   字形为内嵌 Latin Modern 轮廓子集（82 字形，子集外字符回退占位盒）；
 - SVG 后端：任意时刻场景 → 独立 SVG 文档。

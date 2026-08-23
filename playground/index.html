@@ -116,6 +116,7 @@
           <option value="morph">morph（圆变方）</option>
           <option value="formula">formula（单公式）</option>
           <option value="texmorph" selected>texmorph（公式 A → 公式 B）</option>
+          <option value="write">write（公式书写 + 沿路径运动）</option>
           <option value="pointer">pointer（跟随指针，env 演示）</option>
         </optgroup>
         <optgroup label="性能套件（确定性）">
@@ -387,7 +388,7 @@ seek.oninput = () => {
   updateTime();
 };
 
-const FORMULA_SCENES = { formula: ["la"], texmorph: ["la", "lb"] };
+const FORMULA_SCENES = { formula: ["la"], texmorph: ["la", "lb"], write: ["la"] };
 
 function onSceneChange() {
   const s = $("scene").value;

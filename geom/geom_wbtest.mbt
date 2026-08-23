@@ -126,3 +126,51 @@ test "align with empty path" {
   let (a, b) = Path::new().align(circle)
   assert_true(a.lerp_compatible(b))
 }
+
+///|
+test "trim halves a line" {
+  let line = Path::new()
+  line.move_to(@math.Vec2::new(0.0, 0.0))
+  line.line_to(@math.Vec2::new(10.0, 0.0))
+  match line.trim(0.0, 0.5).bbox() {
+    Some(b) => {
+      assert_true((b.width() - 5.0).abs() < 1.0e-9)
+      assert_eq(b.min.x, 0.0)
+    }
+    None => abort("expected bbox")
+  }
+  // Full window round-trips the length.
+  let full = line.trim(0.0, 1.0)
+  assert_true((full.total_length() - 10.0).abs() < 1.0e-9)
+  // Empty window trims to nothing.
+  assert_eq(line.trim(0.5, 0.5).segments.length(), 0)
+}
+
+///|
+test "point_at_proportion walks a circle by arc length" {
+  let circle = Path::circle(@math.Vec2::new(0.0, 0.0), 1.0)
+  let p0 = circle.point_at_proportion(0.0)
+  assert_true((p0.x - 1.0).abs() < 1.0e-9 && p0.y.abs() < 1.0e-9)
+  // Quarter of the perimeter lands at the top of the circle.
+  let p25 = circle.point_at_proportion(0.25)
+  assert_true(p25.x.abs() < 1.0e-2 && (p25.y - 1.0).abs() < 1.0e-2)
+  // Full turn returns to the start.
+  let p100 = circle.point_at_proportion(1.0)
+  assert_true(p100.distance(p0) < 1.0e-2)
+}
+
+///|
+test "to_dashed splits a line into dash subpaths" {
+  let line = Path::new()
+  line.move_to(@math.Vec2::new(0.0, 0.0))
+  line.line_to(@math.Vec2::new(100.0, 0.0))
+  let dashed = line.to_dashed(dash=10.0, gap=10.0)
+  let mut moves = 0
+  for seg in dashed.segments {
+    if seg is MoveTo(_) {
+      moves += 1
+    }
+  }
+  assert_eq(moves, 5) // 100 / (10 + 10)
+  assert_true((dashed.total_length() - 50.0).abs() < 1.0e-6)
+}
