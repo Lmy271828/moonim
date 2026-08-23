@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>moonim playground</title>
+<style>
+  body { background: #1a1a1a; color: #eee; font-family: system-ui, sans-serif;
+         max-width: 1020px; margin: 0 auto; padding: 16px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+         margin: 8px 0; }
+  label { font-size: 14px; color: #aaa; }
+  input[type=text] { background: #2a2a2a; color: #eee; border: 1px solid #444;
+                     border-radius: 4px; padding: 6px 8px; width: 220px;
+                     font-family: monospace; }
+  button, select { background: #2a2a2a; color: #eee; border: 1px solid #555;
+                   border-radius: 4px; padding: 6px 14px; cursor: pointer; }
+  button:hover { background: #3a3a3a; }
+  #stage { width: 960px; height: 540px; background: #000; margin-top: 8px; }
+  #stage svg { width: 100%; height: 100%; }
+  #seek { flex: 1; }
+  #status { font-size: 13px; color: #e08080; min-height: 1.2em; }
+  #canvas { display: none; }
+</style>
+</head>
+<body>
+<h1>moonim playground</h1>
+
+<div class="row">
+  <label>场景
+    <select id="scene">
+      <option value="morph">morph（圆变方）</option>
+      <option value="formula">formula（单公式）</option>
+      <option value="texmorph" selected>texmorph（公式 A → 公式 B）</option>
+    </select>
+  </label>
+  <label id="la">公式 A <input type="text" id="fa" value="x^2"></label>
+  <label id="lb">公式 B <input type="text" id="fb" value="\frac{x^2}{2}"></label>
+  <label>fps <input type="number" id="fps" value="24" min="1" max="60" style="width:60px"></label>
+</div>
+
+<div class="row">
+  <button id="play">播放</button>
+  <input type="range" id="seek" min="0" max="1000" value="0">
+  <span id="time">0.00 / 0.00 s</span>
+  <button id="record">录制 webm</button>
+</div>
+
+<div id="status"></div>
+<div id="stage"></div>
+<canvas id="canvas" width="960" height="540"></canvas>
+
+<script src="../_build/js/debug/build/playground/playground.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const stage = $("stage"), status = $("status"), seek = $("seek");
+let playing = false, t = 0, dur = 0, lastTs = null;
+
+function currentInputs() {
+  return [$("scene").value, $("fa").value, $("fb").value];
+}
+
+function refreshDuration() {
+  const [s, a, b] = currentInputs();
+  dur = globalThis.moonim.duration(s, a, b);
+}
+
+function drawFrame(tt) {
+  const [s, a, b] = currentInputs();
+  const svg = globalThis.moonim.render(s, a, b, tt);
+  if (svg.startsWith("ERROR:")) {
+    status.textContent = svg;
+    return null;
+  }
+  status.textContent = "";
+  stage.innerHTML = svg;
+  return svg;
+}
+
+function updateTime() {
+  $("time").textContent = t.toFixed(2) + " / " + dur.toFixed(2) + " s";
+  seek.value = dur > 0 ? Math.round(1000 * t / dur) : 0;
+}
+
+function frame(ts) {
+  if (!playing) return;
+  if (lastTs !== null) t += (ts - lastTs) / 1000;
+  lastTs = ts;
+  if (t >= dur) { t = dur; playing = false; $("play").textContent = "播放"; }
+  drawFrame(t);
+  updateTime();
+  if (playing) requestAnimationFrame(frame);
+}
+
+$("play").onclick = () => {
+  playing = !playing;
+  $("play").textContent = playing ? "暂停" : "播放";
+  if (playing) {
+    if (t >= dur) t = 0;
+    lastTs = null;
+    requestAnimationFrame(frame);
+  }
+};
+
+seek.oninput = () => { t = dur * seek.value / 1000; drawFrame(t); updateTime(); };
+
+function onSceneChange() {
+  const s = $("scene").value;
+  $("la").style.display = s === "morph" ? "none" : "";
+  $("lb").style.display = s === "texmorph" ? "" : "none";
+  t = 0;
+  refreshDuration();
+  drawFrame(0);
+  updateTime();
+}
+$("scene").onchange = onSceneChange;
+$("fa").oninput = onSceneChange;
+$("fb").oninput = onSceneChange;
+
+// --- webm export: real-time playback recorded off a canvas ---
+function svgToCanvas(svg, ctx) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0); URL.revokeObjectURL(img.src); resolve(); };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  });
+}
+
+$("record").onclick = async () => {
+  const fps = Math.max(1, Math.min(60, parseInt($("fps").value) || 24));
+  const canvas = $("canvas"), ctx = canvas.getContext("2d");
+  const stream = canvas.captureStream(fps);
+  const rec = new MediaRecorder(stream, { mimeType: "video/webm" });
+  const chunks = [];
+  rec.ondataavailable = (e) => chunks.push(e.data);
+  const done = new Promise((r) => (rec.onstop = r));
+  const [s, a, b] = currentInputs();
+  playing = false; $("play").textContent = "播放";
+  rec.start();
+  for (let i = 0, n = Math.round(dur * fps); i <= n; i++) {
+    const tt = Math.min(i / fps, dur);
+    const svg = globalThis.moonim.render(s, a, b, tt);
+    if (!svg || svg.startsWith("ERROR:")) { status.textContent = svg || "render error"; rec.stop(); return; }
+    stage.innerHTML = svg;
+    t = tt; updateTime();
+    await svgToCanvas(svg, ctx);
+    // pace to real time so MediaRecorder timestamps line up
+    await new Promise((r) => setTimeout(r, 1000 / fps));
+  }
+  rec.stop();
+  await done;
+  const url = URL.createObjectURL(new Blob(chunks, { type: "video/webm" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "moonim-" + s + ".webm";
+  link.click();
+  drawFrame(t);
+};
+
+onSceneChange();
+</script>
+</body>
+</html>

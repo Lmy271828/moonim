@@ -1,0 +1,27 @@
+// Package: browser playground entry. Builds to the js target
+// (`moon build --target js playground`) and registers a `moonim` API
+// object on globalThis for playground/index.html to drive.
+
+import {
+  "lmy271828/moonim/math",
+  "lmy271828/moonim/geom",
+  "lmy271828/moonim/mobject",
+  "lmy271828/moonim/anim",
+  "lmy271828/moonim/tex",
+  "lmy271828/moonim/backend/svg",
+}
+
+pkgtype(kind: "executable")
+
+// On non-js targets only the stub main remains, so every import looks
+// unused there; that is intentional, not dead code.
+
+warnings = "-29"
+
+options(
+  targets: {
+    "main_js.mbt": [ "js" ],
+    "main_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "main_native.mbt": [ "native" ],
+  },
+)

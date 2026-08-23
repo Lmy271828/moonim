@@ -40,7 +40,25 @@ moon run examples/morph > frames.txt
 | `tex/` | `lmy271828/moonim/tex` | `FormulaRenderer` trait（扩展点）+ `MiniTex` 子集排版器 + `CachedRenderer` 记忆化包装 |
 | `cache/` | `lmy271828/moonim/cache` | 显式键控 LRU 记忆化（见 design.md「缓存层」） |
 | `backend/svg/` | `lmy271828/moonim/backend/svg` | Mobject 树 → SVG 文档序列化 |
+| `playground/` | — | 浏览器 playground（js 目标构建 + 静态页面，见下节） |
 | `examples/` | — | 可执行示例（CI 中实际运行并校验输出） |
+
+## 浏览器 playground
+
+`playground/` 是一个纯静态、无服务端的在线演示：MoonBit 编译到 js 目标，
+浏览器直接调用渲染 API 逐帧生成 SVG 并播放，支持公式输入、seek 与
+webm 录制（MediaRecorder）。
+
+```bash
+moon build --target js playground   # 产出 _build/js/debug/build/playground/playground.js
+python3 -m http.server              # 在仓库根目录启动静态服务
+# 打开 http://localhost:8000/playground/
+```
+
+页面通过 `globalThis.moonim.render(scene, formula_a, formula_b, t)` 与
+`duration(...)` 与引擎交互；场景 id：`morph` / `formula` / `texmorph`。
+`main_*.mbt` 按后端拆分（moon.pkg 的 `targets` 声明），非 js 目标只编译
+空壳 main，不引入 js FFI。
 
 最小用法：
 
