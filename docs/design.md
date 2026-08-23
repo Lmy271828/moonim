@@ -14,7 +14,13 @@ moonim 不做"另一个 Manim"。Manim 的生态位是本地 Python 脚本 + 离
 
 - **渲染后端路线 SVG → Canvas2D → WebGL**：SVG 纯计算、可 golden
   test、足够支撑教学级场景；只有当实测帧率不足时才向 Canvas2D/WebGL
-  演进——触发条件是性能不足，不是功能冲动。
+  演进——触发条件是性能不足，不是功能冲动。判断标准用 playground 的
+  确定性性能套件（`bench-light` / `bench-standard` / `bench-heavy`，
+  场景定义见 `playground/main_js.mbt` 的 `build_bench`）量化：
+  `bench-standard` 在中端设备上**持续**低于 30fps（p95 帧时长
+  > 33ms）或 seek 延迟持续超过 100ms，才算"实测帧率不足"；且须先按
+  「场景构建 / render_at 计算 / SVG 序列化 / DOM 更新」四段归因再
+  决定演进对象——若瓶颈在计算段，换渲染后端无济于事。
 - **公式走数据生成路线**：内嵌字形子集 + MiniTex 排版已经覆盖演示级
   公式；MicroTeX FFI 仅作为 native 后端的备选保留，有真实需求（复杂
   宏、完整 LaTeX 语义）时才启动，wasm 侧永远不走 FFI。
@@ -23,6 +29,30 @@ moonim 不做"另一个 Manim"。Manim 的生态位是本地 Python 脚本 + 离
   每帧 mutation 的 `add_updater`）与纯函数时间轴冲突，**明确不移植**。
 - **纯函数 render_at 是定位的基石而非限制**：seek、帧缓存、将来的
   协同编辑与撤销，全部受益于"同一 (scene, t) 恒得同一帧"。
+
+## 在线开发与交互外壳
+
+「在线开发」= 亚秒级编辑-预览回路 + 零安装 + 链接即作品。按能力分
+三层：L0 参数调节（playground 已实现）、L1 场景组装（目标：浏览器
+内用 JS 组装真正的场景）、L2 完整 MoonBit 脚本编译（**明确不追**——
+需要工具链 wasm 化或服务端编译，均违背定位）。架构选型：**纯函数内核
+不动，交互与在线开发全部落在一层有状态外壳上**。
+
+- **JS API 外壳**：wasm 模块暴露 mobject / animation / scene 构造器，
+  用户在浏览器编辑器（Monaco/CodeMirror）里写 JS 组装场景，场景代码
+  编码进 URL hash 分享——分享的链接无需携带任何运行时状态，这正是
+  纯函数内核的红利。内核不感知 JS，外壳只是构造调用的转发层。
+- **交互 env**：交互状态（playhead、相机、拖拽偏移、指针位置）集中在
+  一个小而明确的 env 结构中，作为参数参与帧求值（动画 update 由
+  `(start, p)` 演进为 `(start, p, env)` 或等价机制）。同输入同输出，
+  纯度保持；manimgl 的 updater 原地 mutation 机制不引入——不移植的
+  是 mutation，不是交互能力。
+- **相机零成本变换**：pan/zoom 是最高频交互，映射为 SVG 根元素的
+  `viewBox` / CSS transform，由浏览器合成器承担，不触发引擎重渲染。
+- **渲染更新策略**：SVG 保留模式自带命中测试（pointer events 直接落在
+  path 上），点选/拖拽比 Canvas2D 手写命中检测简单；高频重渲染（拖拽
+  跟手）时按 Layer 拆分 DOM，只替换受影响的子树，而非整棵 innerHTML。
+  Canvas2D 仍以四段归因数据为前提，不提前上马。
 
 ## 1. 总体架构
 

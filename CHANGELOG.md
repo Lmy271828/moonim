@@ -43,7 +43,10 @@
     `scale_in_place` / `rotate`（growing.mbt）；
   - `mobject`：新增公开 `Mobject::scale_about`（matching.mbt 的私有
     版本上移）与 `Mobject::map_colors`。
-- `docs/design.md`：新增「定位：浏览器内的即时数学动画」一节。
+- `docs/design.md`：新增「定位：浏览器内的即时数学动画」与「在线开发
+  与交互外壳」两节——JS API 外壳 + 交互 env（内核保持纯函数）、相机
+  走 viewBox/CSS 零成本变换、按 Layer 拆分 DOM 的增量更新策略；性能
+  归因改为「场景构建 / render_at 计算 / SVG 序列化 / DOM 更新」四段。
 
 ### 修复
 
