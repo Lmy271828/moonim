@@ -101,9 +101,8 @@ fn Parser::parse_atom(self : Parser) -> Node? {
 }
 
 ///|
-/// Map a small set of Greek letter commands to Unicode code points.
-/// The MiniTex glyph boxes make no visual distinction yet, but the
-/// mapping keeps the parsed AST faithful for future glyph backends.
+/// Map a small set of Greek letter commands to Unicode code points;
+/// outlines and advances come from the embedded glyph subset.
 fn greek_letter(name : String) -> Char? {
   match name {
     "alpha" => Some('α')
@@ -151,7 +150,7 @@ fn Parser::parse_expr(self : Parser) -> Result[Array[Node], RenderError] {
         } else {
           self.pos = save
           match self.parse_atom() {
-            Some(node) => nodes.push(node)
+            Some(node) => nodes.push(parse_scripts(self, node))
             None => return Err(UnsupportedSyntax("unknown command: \\" + cmd))
           }
         }

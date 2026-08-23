@@ -41,6 +41,11 @@
     版本上移）与 `Mobject::map_colors`。
 - `docs/design.md`：新增「定位：浏览器内的即时数学动画」一节。
 
+### 修复
+
+- `tex`：MiniTex 解析器中 `\alpha^2` 等"命令原子 + 上下标"组合此前报
+  `unexpected character`——`\\` 分支漏挂了 `parse_scripts`。
+
 ## [0.1.0] - 2026-08-05
 
 工程骨架首次发布。可构建、可测试（27 个用例）、示例可运行。

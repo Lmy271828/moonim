@@ -31,6 +31,21 @@ test "greek letters parse" {
 }
 
 ///|
+test "scripts attach to command atoms, not just characters" {
+  // Regression: \alpha^2 used to fail because the \\ branch of parse_expr
+  // skipped parse_scripts, leaving '^' to error out as a stray character.
+  let tex = MiniTex::new()
+  match (tex.render("\\alpha^2", 1.0), tex.render("\\alpha", 1.0)) {
+    (Ok(with_sup), Ok(plain)) =>
+      match (with_sup.bbox(), plain.bbox()) {
+        (Some(ws), Some(p)) => assert_true(ws.height() > p.height())
+        _ => abort("expected bboxes")
+      }
+    _ => abort("unexpected error")
+  }
+}
+
+///|
 test "unknown command is rejected" {
   let tex = MiniTex::new()
   assert_eq(
