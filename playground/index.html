@@ -66,7 +66,9 @@
     border: 1px solid var(--border); border-radius: 10px;
     margin-top: 14px; overflow: hidden;
     box-shadow: 0 8px 30px #00000055;
+    cursor: grab; touch-action: none;
   }
+  #stage:active { cursor: grabbing; }
   #stage svg { width: 100%; height: 100%; display: block; }
 
   #statusbar {
@@ -74,6 +76,7 @@
     margin-top: 10px; font-size: 13px; min-height: 1.4em; gap: 16px;
   }
   #status { color: var(--error); font-family: var(--mono); }
+  #zoom { color: var(--accent); font-family: var(--mono); margin-left: 12px; }
   #perf { color: var(--dim); font-family: var(--mono); margin-left: auto; }
   #perf .good { color: #7ec98f; }
   #perf .bad { color: var(--error); }
@@ -155,11 +158,13 @@
 
 <div id="statusbar">
   <span id="status"></span>
+  <span id="zoom"></span>
   <span id="perf"></span>
 </div>
 
 <div class="hint">
   <kbd>空格</kbd> 播放/暂停 · <kbd>←</kbd><kbd>→</kbd> ±0.05s（<kbd>Shift</kbd> ±0.5s）· <kbd>L</kbd> 循环 ·
+  拖拽平移 · 滚轮缩放 · 双击复位 ·
   性能套件是确定性场景，用于跨版本对比帧率
 </div>
 
@@ -199,7 +204,11 @@ function drawFrame(tt) {
     render: globalThis.moonim.last_render_ms(),
     svg: globalThis.moonim.last_svg_ms(),
   };
-  const svg = globalThis.moonim.last_svg();
+  const raw = globalThis.moonim.last_svg();
+  if (!camDefault) camDefault = parseViewBox(raw);
+  const svg = cam
+    ? raw.replace(/viewBox="[^"]*"/, 'viewBox="' + camString() + '"')
+    : raw;
   const d0 = performance.now();
   stage.innerHTML = svg;
   seg.dom = performance.now() - d0;
@@ -218,6 +227,73 @@ function updatePerf(seg, rafDelta) {
     segEma.render.toFixed(1) + ' · 序列化 ' + segEma.svg.toFixed(1) +
     ' · DOM ' + segEma.dom.toFixed(1) + ' ms';
 }
+
+// --- camera: pan/zoom maps to the root SVG viewBox, so the compositor
+// does all the work and the engine is never involved (design.md
+// 「在线开发与交互外壳」). cam is null at the scene default.
+let cam = null;       // {x, y, w, h} in viewBox units
+let camDefault = null; // parsed from the rendered svg
+
+function parseViewBox(svg) {
+  const m = svg.match(/viewBox="([\d.\- ]+)"/);
+  if (!m) return null;
+  const [x, y, w, h] = m[1].trim().split(/\s+/).map(Number);
+  return { x, y, w, h };
+}
+
+function camString() {
+  const c = cam || camDefault;
+  return c ? c.x + " " + c.y + " " + c.w + " " + c.h : null;
+}
+
+function setLiveViewBox() {
+  const el = stage.querySelector("svg");
+  if (el) el.setAttribute("viewBox", camString());
+  const z = $("zoom");
+  if (cam && camDefault) {
+    z.textContent = (100 * camDefault.w / cam.w).toFixed(0) + "% · 双击复位";
+  } else {
+    z.textContent = "";
+  }
+}
+
+let drag = null;
+stage.addEventListener("pointerdown", (e) => {
+  if (!camDefault) return;
+  stage.setPointerCapture(e.pointerId);
+  drag = { px: e.clientX, py: e.clientY, cam: Object.assign({}, cam || camDefault) };
+});
+stage.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  // Grab-and-drag: content follows the cursor, so the viewBox moves the
+  // opposite way (viewBox space is y-down, matching pointer deltas).
+  const spp = drag.cam.w / stage.getBoundingClientRect().width;
+  cam = {
+    x: drag.cam.x - (e.clientX - drag.px) * spp,
+    y: drag.cam.y - (e.clientY - drag.py) * spp,
+    w: drag.cam.w,
+    h: drag.cam.h,
+  };
+  setLiveViewBox();
+});
+stage.addEventListener("pointerup", () => (drag = null));
+stage.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  if (!camDefault) return;
+  // Zoom anchored at the cursor: the scene point under the cursor stays put.
+  const rect = stage.getBoundingClientRect();
+  const c0 = cam || camDefault;
+  const w = Math.min(4800, Math.max(60, c0.w * Math.pow(1.0015, e.deltaY)));
+  const h = w * c0.h / c0.w;
+  const fx = (e.clientX - rect.left) / rect.width;
+  const fy = (e.clientY - rect.top) / rect.height;
+  cam = { x: c0.x + fx * (c0.w - w), y: c0.y + fy * (c0.h - h), w, h };
+  setLiveViewBox();
+}, { passive: false });
+stage.addEventListener("dblclick", () => {
+  cam = null;
+  setLiveViewBox();
+});
 
 function updateTime() {
   $("time").textContent = t.toFixed(2) + " / " + dur.toFixed(2) + " s";
@@ -282,6 +358,9 @@ function onSceneChange() {
   $("lb").style.display = show.includes("lb") ? "" : "none";
   t = 0;
   buildMs = 0;
+  cam = null;
+  camDefault = null;
+  $("zoom").textContent = "";
   prepareScene();
   drawFrame(0);
   updateTime();
@@ -373,6 +452,8 @@ async function runBench() {
   const panel = $("bench");
   panel.hidden = false;
   const tbody = panel.querySelector("tbody");
+  cam = null;
+  camDefault = null;
   const scenes = ["bench-light", "bench-standard", "bench-heavy"];
   const N = 60;
   // Warm up MiniTex's one-time glyph-data init so it doesn't land in the

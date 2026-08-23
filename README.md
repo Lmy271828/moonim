@@ -46,8 +46,9 @@ moon run examples/morph > frames.txt
 ## 浏览器 playground
 
 `playground/` 是一个纯静态、无服务端的在线演示：MoonBit 编译到 js 目标，
-浏览器直接调用渲染 API 逐帧生成 SVG 并播放，支持公式输入、seek 与
-webm 录制（MediaRecorder）。
+浏览器直接调用渲染 API 逐帧生成 SVG 并播放，支持公式输入、seek、相机
+pan/zoom（拖拽/滚轮/双击复位，纯 viewBox 变换）与 webm 录制
+（MediaRecorder）。
 
 ```bash
 moon build --target js playground   # 产出 _build/js/debug/build/playground/playground.js

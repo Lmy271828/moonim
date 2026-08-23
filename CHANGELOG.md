@@ -36,6 +36,9 @@
   （可复制为 Markdown）。首次实测（2026-08-23，Chromium 桌面）：四段
   合计 p95 ≤ 0.5ms，SVG 后端判定为充分，Canvas2D/WebGL 议题冻结，
   数据与结论固化于 docs/design.md「定位」。
+- `playground/`：交互外壳第一步——相机 pan/zoom（拖拽平移、指针锚点
+  滚轮缩放、双击复位），纯 viewBox 变换，零引擎开销（design.md
+  「在线开发与交互外壳」）。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep

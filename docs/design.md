@@ -63,6 +63,8 @@ moonim 不做"另一个 Manim"。Manim 的生态位是本地 Python 脚本 + 离
   是 mutation，不是交互能力。
 - **相机零成本变换**：pan/zoom 是最高频交互，映射为 SVG 根元素的
   `viewBox` / CSS transform，由浏览器合成器承担，不触发引擎重渲染。
+  （已在 playground 实现：拖拽平移、以指针为锚点的滚轮缩放、双击复位；
+  缩放范围限制在 viewBox 宽 60–4800。）
 - **渲染更新策略**：SVG 保留模式自带命中测试（pointer events 直接落在
   path 上），点选/拖拽比 Canvas2D 手写命中检测简单；高频重渲染（拖拽
   跟手）时按 Layer 拆分 DOM，只替换受影响的子树，而非整棵 innerHTML。
