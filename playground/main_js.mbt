@@ -1,11 +1,22 @@
 ///|
+/// Millisecond clock for the four-segment attribution timing (design.md
+/// 「定位」: scene build / render_at / SVG serialization / DOM update).
+extern "js" fn now() -> Double =
+  #| () => performance.now()
+
+///|
 /// Register the playground API on the JS global object.
 extern "js" fn register_api(
   render : (String, String, String, Double) -> String,
   duration : (String, String, String) -> Double,
+  prepare : (String, String, String) -> Double,
+  frame : (Double) -> String,
+  last_svg : () -> String,
+  last_render_ms : () -> Double,
+  last_svg_ms : () -> Double,
 ) -> Unit =
-  #| (render, duration) => {
-  #|   globalThis.moonim = { render, duration };
+  #| (render, duration, prepare, frame, last_svg, last_render_ms, last_svg_ms) => {
+  #|   globalThis.moonim = { render, duration, prepare, frame, last_svg, last_render_ms, last_svg_ms };
   #| }
 
 ///|
@@ -330,25 +341,107 @@ fn build_scene(
 }
 
 ///|
+/// The prepared scene, keyed by its inputs. `prepare` rebuilds only when
+/// the key changes, so per-frame costs exclude scene construction — which
+/// is timed and reported separately.
+priv struct CachedScene {
+  key : (String, String, String)
+  result : Result[@anim.Scene, String]
+}
+
+///|
+let scene_cache : Ref[CachedScene?] = { val: None }
+
+///|
+/// (svg, render_ms, svg_ms) of the most recent `frame` call.
+let last_frame : Ref[(String, Double, Double)] = { val: ("", 0.0, 0.0) }
+
+///|
+/// Build the scene for the given inputs and cache it. Returns the build
+/// time in ms, 0.0 on a cache hit, or -1.0 on a build error (the error is
+/// kept in the cache and reported by `frame`).
+fn prepare(scene_id : String, a : String, b : String) -> Double {
+  let key = (scene_id, a, b)
+  let hit = match scene_cache.val {
+    Some(c) => c.key == key
+    None => false
+  }
+  if hit {
+    return 0.0
+  }
+  let t0 = now()
+  let result = build_scene(scene_id, a, b)
+  let ms = now() - t0
+  scene_cache.val = Some({ key, result })
+  match result {
+    Ok(_) => ms
+    Err(_) => -1.0
+  }
+}
+
+///|
+/// Render one frame of the prepared scene into `last_frame`. Returns ""
+/// on success or "ERROR: ..."; timings are read back via the getters below.
+fn frame(t : Double) -> String {
+  match scene_cache.val {
+    None => "ERROR: no scene prepared"
+    Some(c) =>
+      match c.result {
+        Err(msg) => "ERROR: " + msg
+        Ok(scene) => {
+          let t0 = now()
+          let m = scene.render_at(t)
+          let t1 = now()
+          let svg = @svg.render_svg(m)
+          let t2 = now()
+          last_frame.val = (svg, t1 - t0, t2 - t1)
+          ""
+        }
+      }
+  }
+}
+
+///|
+fn last_svg() -> String {
+  last_frame.val.0
+}
+
+///|
+fn last_render_ms() -> Double {
+  last_frame.val.1
+}
+
+///|
+fn last_svg_ms() -> Double {
+  last_frame.val.2
+}
+
+///|
 /// One SVG frame of the scene at time `t`. Errors are reported as an
-/// "ERROR: ..." string so the page can display them.
+/// "ERROR: ..." string so the page can display them. Kept for backward
+/// compatibility; the page prefers the prepare/frame split so that scene
+/// construction is not paid per frame.
 fn render(scene_id : String, a : String, b : String, t : Double) -> String {
-  match build_scene(scene_id, a, b) {
-    Err(msg) => "ERROR: " + msg
-    Ok(scene) => @svg.render_svg(scene.render_at(t))
+  ignore(prepare(scene_id, a, b))
+  match frame(t) {
+    "" => last_svg()
+    err => err
   }
 }
 
 ///|
 /// Total duration of the scene in seconds (0 on error).
 fn duration(scene_id : String, a : String, b : String) -> Double {
-  match build_scene(scene_id, a, b) {
-    Err(_) => 0.0
-    Ok(scene) => scene.duration()
+  ignore(prepare(scene_id, a, b))
+  match scene_cache.val {
+    Some({ result: Ok(scene), .. }) => scene.duration()
+    _ => 0.0
   }
 }
 
 ///|
 fn main {
-  register_api(render, duration)
+  register_api(
+    render, duration, prepare, frame, last_svg, last_render_ms, last_svg_ms,
+  )
 }

@@ -55,14 +55,18 @@ python3 -m http.server              # 在仓库根目录启动静态服务
 # 打开 http://localhost:8000/playground/
 ```
 
-页面通过 `globalThis.moonim.render(scene, formula_a, formula_b, t)` 与
-`duration(...)` 与引擎交互。示例场景 id：`morph` / `formula` / `texmorph`；
-性能套件 id：`bench-light`（2 层，图形 morph + 短公式 morph）/
-`bench-standard`（5 层，公式 morph + 坐标轴 + 生长/旋转/摆动）/
-`bench-heavy`（27 层，长公式 morph + 25 个错峰圆 + 持续旋转外框）。
-性能套件忽略公式输入、完全确定，用于跨版本对比帧率（标准见
-design.md「定位」一节）。`main_*.mbt` 按后端拆分（moon.pkg 的 `targets`
-声明），非 js 目标只编译空壳 main，不引入 js FFI。
+页面通过 `globalThis.moonim` 与引擎交互：`prepare(scene, a, b)` 构建并
+缓存场景（返回构建耗时 ms），`frame(t)` 渲染一帧，`last_svg()` /
+`last_render_ms()` / `last_svg_ms()` 读回结果与分段耗时；`render(...)`
+与 `duration(...)` 为兼容封装。示例场景 id：`morph` / `formula` /
+`texmorph`；性能套件 id：`bench-light`（2 层，图形 morph + 短公式
+morph）/ `bench-standard`（5 层，公式 morph + 坐标轴 + 生长/旋转/
+摆动）/ `bench-heavy`（27 层，长公式 morph + 25 个错峰圆 + 持续旋转
+外框）。性能套件忽略公式输入、完全确定，用于跨版本对比帧率（标准见
+design.md「定位」一节）；`?bench=1` 打开四段归因（场景构建 /
+render_at / 序列化 / DOM）的自动测量与结果表。`main_*.mbt` 按后端
+拆分（moon.pkg 的 `targets` 声明），非 js 目标只编译空壳 main，不引入
+js FFI。
 
 最小用法：
 

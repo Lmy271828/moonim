@@ -78,6 +78,18 @@
   #perf .good { color: #7ec98f; }
   #perf .bad { color: var(--error); }
 
+  #bench {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  #bench h2 { font-size: 15px; margin: 0 0 10px; }
+  #bench table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 12px; }
+  #bench th, #bench td { border: 1px solid var(--border); padding: 5px 9px; text-align: right; }
+  #bench th:first-child, #bench td:first-child { text-align: left; }
+  #bench th { color: var(--dim); font-weight: 600; }
+  #bench .note { font-size: 12px; color: var(--dim); margin-top: 8px; }
+  #bench-copy { margin-top: 10px; }
+
   .hint { margin-top: 14px; font-size: 12px; color: #6a7078; }
   .hint kbd {
     background: #262a31; border: 1px solid var(--border); border-radius: 4px;
@@ -122,6 +134,23 @@
   </div>
 </div>
 
+<div id="bench" hidden>
+  <h2>性能归因（四段：构建 / render_at / 序列化 / DOM）</h2>
+  <table id="bench-table">
+    <thead><tr>
+      <th>场景</th><th>构建 ms</th>
+      <th>render_at p50</th><th>p95</th>
+      <th>序列化 p50</th><th>p95</th>
+      <th>DOM p50</th><th>p95</th>
+      <th>合计 p95</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="note">DOM 段只含 innerHTML 解析与插入，不含浏览器排版/绘制（异步发生）。
+    每场景 60 帧采样，第一遍预热、第二遍取样。</div>
+  <button id="bench-copy">复制 Markdown</button>
+</div>
+
 <div id="stage"></div>
 
 <div id="statusbar">
@@ -142,39 +171,52 @@
 const $ = (id) => document.getElementById(id);
 const stage = $("stage"), status = $("status"), seek = $("seek"), perf = $("perf");
 let playing = false, loop = false, t = 0, dur = 0, lastTs = null;
-// Playback smoothness: EMA of the rAF cadence (attribution across
-// compute/serialize/DOM is a separate, planned measurement).
-let fpsEma = 0, msEma = 0;
+// Four-segment attribution (design.md): scene build is timed once per
+// scene change; render_at / serialization / DOM are EMA-smoothed per frame.
+// DOM covers innerHTML parse+insert only — layout and paint are async.
+let fpsEma = 0, buildMs = 0;
+const segEma = { render: 0, svg: 0, dom: 0 };
 
 function currentInputs() {
   return [$("scene").value, $("fa").value, $("fb").value];
 }
 
-function refreshDuration() {
+function prepareScene() {
   const [s, a, b] = currentInputs();
+  const ms = globalThis.moonim.prepare(s, a, b);
+  if (ms > 0) buildMs = ms;
   dur = globalThis.moonim.duration(s, a, b);
 }
 
 function drawFrame(tt) {
-  const [s, a, b] = currentInputs();
-  const t0 = performance.now();
-  const svg = globalThis.moonim.render(s, a, b, tt);
-  if (svg.startsWith("ERROR:")) {
-    status.textContent = svg;
+  const err = globalThis.moonim.frame(tt);
+  if (err) {
+    status.textContent = err;
     return null;
   }
   status.textContent = "";
+  const seg = {
+    render: globalThis.moonim.last_render_ms(),
+    svg: globalThis.moonim.last_svg_ms(),
+  };
+  const svg = globalThis.moonim.last_svg();
+  const d0 = performance.now();
   stage.innerHTML = svg;
-  return performance.now() - t0;
+  seg.dom = performance.now() - d0;
+  return seg;
 }
 
-function updatePerf(frameMs, rafDelta) {
+function updatePerf(seg, rafDelta) {
   const fps = 1000 / rafDelta;
   fpsEma = fpsEma ? fpsEma * 0.9 + fps * 0.1 : fps;
-  msEma = msEma ? msEma * 0.9 + frameMs * 0.1 : frameMs;
+  for (const k of ["render", "svg", "dom"]) {
+    segEma[k] = segEma[k] ? segEma[k] * 0.9 + seg[k] * 0.1 : seg[k];
+  }
   const cls = fpsEma >= 30 ? "good" : "bad";
   perf.innerHTML = '播放 <span class="' + cls + '">' + fpsEma.toFixed(0) +
-    ' fps</span> · 帧耗时 ' + msEma.toFixed(1) + ' ms';
+    ' fps</span> · 构建 ' + buildMs.toFixed(1) + ' · 计算 ' +
+    segEma.render.toFixed(1) + ' · 序列化 ' + segEma.svg.toFixed(1) +
+    ' · DOM ' + segEma.dom.toFixed(1) + ' ms';
 }
 
 function updateTime() {
@@ -188,7 +230,8 @@ function setPlaying(on) {
   if (on) {
     if (t >= dur) t = 0;
     lastTs = null;
-    fpsEma = 0; msEma = 0;
+    fpsEma = 0;
+    segEma.render = segEma.svg = segEma.dom = 0;
     requestAnimationFrame(frame);
   } else {
     perf.textContent = "";
@@ -211,9 +254,9 @@ function frame(ts) {
       return;
     }
   }
-  const ms = drawFrame(t);
+  const seg = drawFrame(t);
   updateTime();
-  if (ms !== null) updatePerf(ms, delta);
+  if (seg !== null) updatePerf(seg, delta);
   if (playing) requestAnimationFrame(frame);
 }
 
@@ -238,7 +281,8 @@ function onSceneChange() {
   $("la").style.display = show.includes("la") ? "" : "none";
   $("lb").style.display = show.includes("lb") ? "" : "none";
   t = 0;
-  refreshDuration();
+  buildMs = 0;
+  prepareScene();
   drawFrame(0);
   updateTime();
 }
@@ -280,17 +324,19 @@ $("record").onclick = async () => {
   setPlaying(false);
   $("record").disabled = true;
   $("record").textContent = "录制中…";
+  globalThis.moonim.prepare(s, a, b);
   rec.start();
   for (let i = 0, n = Math.round(dur * fps); i <= n; i++) {
     const tt = Math.min(i / fps, dur);
-    const svg = globalThis.moonim.render(s, a, b, tt);
-    if (!svg || svg.startsWith("ERROR:")) {
-      status.textContent = svg || "render error";
+    const err = globalThis.moonim.frame(tt);
+    if (err) {
+      status.textContent = err;
       rec.stop();
       $("record").disabled = false;
       $("record").textContent = "录制 webm";
       return;
     }
+    const svg = globalThis.moonim.last_svg();
     stage.innerHTML = svg;
     t = tt; updateTime();
     await svgToCanvas(svg, ctx);
@@ -309,7 +355,80 @@ $("record").onclick = async () => {
   drawFrame(t);
 };
 
+// --- attribution bench (?bench=1): four-segment timing over the suite ---
+function percentile(sorted, p) {
+  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+}
+
+function benchStats(samples) {
+  const out = {};
+  for (const k of ["render", "svg", "dom"]) {
+    const s = samples[k].slice().sort((a, b) => a - b);
+    out[k] = { p50: percentile(s, 0.5), p95: percentile(s, 0.95) };
+  }
+  return out;
+}
+
+async function runBench() {
+  const panel = $("bench");
+  panel.hidden = false;
+  const tbody = panel.querySelector("tbody");
+  const scenes = ["bench-light", "bench-standard", "bench-heavy"];
+  const N = 60;
+  // Warm up MiniTex's one-time glyph-data init so it doesn't land in the
+  // first scene's build number.
+  globalThis.moonim.prepare("formula", "x", "");
+  const mdRows = ["| 场景 | 构建 ms | render_at p50 | p95 | 序列化 p50 | p95 | DOM p50 | p95 | 合计 p95 |",
+    "|---|---|---|---|---|---|---|---|---|"];
+  for (const s of scenes) {
+    const build = globalThis.moonim.prepare(s, "", "");
+    const d = globalThis.moonim.duration(s, "", "");
+    const samples = { render: [], svg: [], dom: [] };
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < N; i++) {
+        const tt = d * i / (N - 1);
+        const err = globalThis.moonim.frame(tt);
+        if (err) { status.textContent = err; return; }
+        const rMs = globalThis.moonim.last_render_ms();
+        const sMs = globalThis.moonim.last_svg_ms();
+        const svg = globalThis.moonim.last_svg();
+        const d0 = performance.now();
+        stage.innerHTML = svg;
+        const dMs = performance.now() - d0;
+        if (pass === 1) {
+          samples.render.push(rMs);
+          samples.svg.push(sMs);
+          samples.dom.push(dMs);
+        }
+        if (i % 15 === 0) await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+    const st = benchStats(samples);
+    const total95 = st.render.p95 + st.svg.p95 + st.dom.p95;
+    const cells = [s, build.toFixed(1),
+      st.render.p50.toFixed(2), st.render.p95.toFixed(2),
+      st.svg.p50.toFixed(2), st.svg.p95.toFixed(2),
+      st.dom.p50.toFixed(2), st.dom.p95.toFixed(2),
+      total95.toFixed(2)];
+    const tr = document.createElement("tr");
+    for (const c of cells) {
+      const td = document.createElement("td");
+      td.textContent = c;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+    mdRows.push("| " + cells.join(" | ") + " |");
+  }
+  const md = mdRows.join("\n");
+  console.log(md);
+  $("bench-copy").onclick = () => navigator.clipboard.writeText(md);
+  onSceneChange();
+}
+
 onSceneChange();
+if (new URLSearchParams(location.search).get("bench") === "1") {
+  runBench();
+}
 </script>
 </body>
 </html>
