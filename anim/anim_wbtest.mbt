@@ -229,3 +229,35 @@ test "rotate swaps bbox extents" {
     None => abort("expected bbox")
   }
 }
+
+///|
+test "env reaches update closures; render_at stays pure" {
+  let dot = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let anim = Animation::new(
+    fn(start, _p, env) {
+      match env.pointer {
+        Some(p) => start.move_center_to(p)
+        None => start
+      }
+    },
+    duration=10.0,
+    easing=linear,
+  )
+  let scene = Scene::new()
+  scene.add_layer(Layer::new(dot, [anim]))
+  // With a pointer in the env, the dot follows it.
+  let env = { pointer: Some(@math.Vec2::new(5.0, 3.0)), pointer_down: false }
+  match scene.render_at_env(1.0, env).bbox() {
+    Some(b) => assert_eq(b.center(), @math.Vec2::new(5.0, 3.0))
+    None => abort("expected bbox")
+  }
+  // Same scene, same t, default env -> the no-interaction frame.
+  match scene.render_at(1.0).bbox() {
+    Some(b) => assert_eq(b.center(), @math.Vec2::new(0.0, 0.0))
+    None => abort("expected bbox")
+  }
+  // Purity per (scene, t, env): repeated evaluation is identical.
+  assert_eq(scene.render_at_env(0.5, env), scene.render_at_env(0.5, env))
+}

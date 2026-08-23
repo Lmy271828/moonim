@@ -10,7 +10,7 @@ extern "js" fn register_api(
   render : (String, String, String, Double) -> String,
   duration : (String, String, String) -> Double,
   prepare : (String, String, String) -> Double,
-  frame : (Double) -> String,
+  frame : (Double, Double, Double, Bool, Bool) -> String,
   last_svg : () -> String,
   last_render_ms : () -> Double,
   last_svg_ms : () -> Double,
@@ -279,6 +279,65 @@ fn build_scene(
 ) -> Result[@anim.Scene, String] {
   match scene_id {
     "bench-light" | "bench-standard" | "bench-heavy" => build_bench(scene_id)
+    "pointer" => { // Interaction-env demo (design.md「在线开发与交互外壳」): a dot
+      // follows the pointer and a ring reacts to the primary button.
+      // Nothing here animates over time — only env drives the frame.
+      let scene = @anim.Scene::new()
+      let axes_path = @geom.Path::new()
+      axes_path.move_to(@math.Vec2::new(60.0, 270.0))
+      axes_path.line_to(@math.Vec2::new(900.0, 270.0))
+      axes_path.move_to(@math.Vec2::new(480.0, 60.0))
+      axes_path.line_to(@math.Vec2::new(480.0, 480.0))
+      let axes = @mobject.Mobject::vmobject(
+        axes_path,
+        fill=None,
+        stroke=Some((@math.Color::new(0.4, 0.4, 0.45), 1.5)),
+      )
+      scene.add_layer(
+        @anim.Layer::new(axes, [@anim.Animation::wait(duration=3600.0)]),
+      )
+      let dot = @mobject.Mobject::vmobject(
+        @geom.Path::circle(@math.Vec2::new(480.0, 270.0), 26.0),
+        fill=Some(@math.Color::green()),
+      )
+      scene.add_layer(
+        @anim.Layer::new(dot, [
+          @anim.Animation::new(
+            fn(start, _p, env) {
+              match env.pointer {
+                Some(p) => start.move_center_to(p)
+                None => start
+              }
+            },
+            duration=3600.0,
+            easing=@anim.linear,
+          ),
+        ]),
+      )
+      let ring = @mobject.Mobject::vmobject(
+        @geom.Path::circle(@math.Vec2::new(480.0, 270.0), 44.0),
+        fill=None,
+        stroke=Some((@math.Color::blue(), 3.0)),
+      )
+      scene.add_layer(
+        @anim.Layer::new(ring, [
+          @anim.Animation::new(
+            fn(start, _p, env) {
+              match env.pointer {
+                Some(p) => {
+                  let k = if env.pointer_down { 1.35 } else { 1.0 }
+                  start.move_center_to(p).scale_about(p, k)
+                }
+                None => start
+              }
+            },
+            duration=3600.0,
+            easing=@anim.linear,
+          ),
+        ]),
+      )
+      Ok(scene)
+    }
     "morph" => {
       let circle = @mobject.Mobject::vmobject(
         @geom.Path::circle(@math.Vec2::new(480.0, 270.0), 120.0),
@@ -380,17 +439,33 @@ fn prepare(scene_id : String, a : String, b : String) -> Double {
 }
 
 ///|
-/// Render one frame of the prepared scene into `last_frame`. Returns ""
-/// on success or "ERROR: ..."; timings are read back via the getters below.
-fn frame(t : Double) -> String {
+/// Render one frame of the prepared scene into `last_frame`, under the
+/// interaction environment described by the pointer arguments (scene
+/// coordinates, y-up). Returns "" on success or "ERROR: ..."; timings are
+/// read back via the getters below.
+fn frame(
+  t : Double,
+  px : Double,
+  py : Double,
+  pointer_active : Bool,
+  pointer_down : Bool,
+) -> String {
   match scene_cache.val {
     None => "ERROR: no scene prepared"
     Some(c) =>
       match c.result {
         Err(msg) => "ERROR: " + msg
         Ok(scene) => {
+          let env : @anim.Env = {
+            pointer: if pointer_active {
+              Some(@math.Vec2::new(px, py))
+            } else {
+              None
+            },
+            pointer_down,
+          }
           let t0 = now()
-          let m = scene.render_at(t)
+          let m = scene.render_at_env(t, env)
           let t1 = now()
           let svg = @svg.render_svg(m)
           let t2 = now()
@@ -423,7 +498,7 @@ fn last_svg_ms() -> Double {
 /// construction is not paid per frame.
 fn render(scene_id : String, a : String, b : String, t : Double) -> String {
   ignore(prepare(scene_id, a, b))
-  match frame(t) {
+  match frame(t, 0.0, 0.0, false, false) {
     "" => last_svg()
     err => err
   }

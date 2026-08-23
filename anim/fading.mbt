@@ -4,7 +4,11 @@ pub fn Animation::fade_in(
   duration~ : Double,
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
-  Animation::new(fn(start, p) { start.with_opacity(p) }, duration~, easing~)
+  Animation::new(
+    fn(start, p, _env) { start.with_opacity(p) },
+    duration~,
+    easing~,
+  )
 }
 
 ///|
@@ -14,7 +18,7 @@ pub fn Animation::fade_out(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { start.with_opacity(1.0 - p) },
+    fn(start, p, _env) { start.with_opacity(1.0 - p) },
     duration~,
     easing~,
   )
@@ -28,7 +32,7 @@ pub fn Animation::fade_in_from_point(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { start.scale_about(point, p).with_opacity(p) },
+    fn(start, p, _env) { start.scale_about(point, p).with_opacity(p) },
     duration~,
     easing~,
   )
@@ -42,7 +46,9 @@ pub fn Animation::fade_out_to_point(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { start.scale_about(point, 1.0 - p).with_opacity(1.0 - p) },
+    fn(start, p, _env) {
+      start.scale_about(point, 1.0 - p).with_opacity(1.0 - p)
+    },
     duration~,
     easing~,
   )
@@ -56,7 +62,7 @@ pub fn Animation::fade_to_color(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { start.map_colors(fn(c) { c.lerp(color, p) }) },
+    fn(start, p, _env) { start.map_colors(fn(c) { c.lerp(color, p) }) },
     duration~,
     easing~,
   )

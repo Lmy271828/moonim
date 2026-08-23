@@ -6,7 +6,7 @@ pub fn Animation::grow_from_center(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) {
+    fn(start, p, _env) {
       let center = match start.bbox() {
         Some(b) => b.center()
         None => @math.Vec2::new(0.0, 0.0)
@@ -26,7 +26,7 @@ pub fn Animation::grow_from_point(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { start.scale_about(point, p) },
+    fn(start, p, _env) { start.scale_about(point, p) },
     duration~,
     easing~,
   )
@@ -39,7 +39,7 @@ pub fn Animation::shrink_to_center(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) {
+    fn(start, p, _env) {
       let center = match start.bbox() {
         Some(b) => b.center()
         None => @math.Vec2::new(0.0, 0.0)
@@ -60,7 +60,7 @@ pub fn Animation::scale_in_place(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) {
+    fn(start, p, _env) {
       let center = match start.bbox() {
         Some(b) => b.center()
         None => @math.Vec2::new(0.0, 0.0)
@@ -83,7 +83,7 @@ pub fn Animation::rotate(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) {
+    fn(start, p, _env) {
       let center = match about {
         Some(c) => c
         None =>

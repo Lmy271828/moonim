@@ -1,17 +1,20 @@
 ///|
 /// An animation: a duration, an easing curve, and an update rule mapping
-/// (state at animation start, eased progress in [0, 1]) to the current
-/// state. Animations are pure — the same (start, t) always yields the same
-/// mobject, which is what makes frame caching and time scrubbing sound.
+/// (state at animation start, eased progress in [0, 1], interaction
+/// environment) to the current state. Animations are pure — the same
+/// (start, t, env) always yields the same mobject, which is what makes
+/// frame caching and time scrubbing sound. `env` carries interaction
+/// state (pointer, ...); animations that don't use it behave exactly as
+/// before (see `Env`).
 pub(all) struct Animation {
   duration : Double
   easing : (Double) -> Double
-  update : (@mobject.Mobject, Double) -> @mobject.Mobject
+  update : (@mobject.Mobject, Double, Env) -> @mobject.Mobject
 }
 
 ///|
 pub fn Animation::new(
-  update : (@mobject.Mobject, Double) -> @mobject.Mobject,
+  update : (@mobject.Mobject, Double, Env) -> @mobject.Mobject,
   duration~ : Double,
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
@@ -29,7 +32,7 @@ pub fn Animation::transform_to(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { Interpolable::lerp(start, to, p) },
+    fn(start, p, _env) { Interpolable::lerp(start, to, p) },
     duration~,
     easing~,
   )
@@ -38,7 +41,7 @@ pub fn Animation::transform_to(
 ///|
 /// Hold the current state for `duration` seconds.
 pub fn Animation::wait(duration~ : Double) -> Animation {
-  Animation::new(fn(start, _p) { start }, duration~, easing=linear)
+  Animation::new(fn(start, _p, _env) { start }, duration~, easing=linear)
 }
 
 ///|
@@ -49,7 +52,7 @@ pub fn Animation::apply_matrix(
   easing? : (Double) -> Double = smooth,
 ) -> Animation {
   Animation::new(
-    fn(start, p) { start.transform(identity_lerp(m, p)) },
+    fn(start, p, _env) { start.transform(identity_lerp(m, p)) },
     duration~,
     easing~,
   )
@@ -69,12 +72,24 @@ fn identity_lerp(m : @math.Mat3, p : Double) -> @math.Mat3 {
 }
 
 ///|
-/// State of the animation at absolute time `t` (seconds since its start),
-/// clamped to [0, duration].
+/// State of the animation at absolute time `t` (seconds since its start)
+/// under the default (no-interaction) environment, clamped to
+/// [0, duration].
 pub fn Animation::at(
   self : Animation,
   start : @mobject.Mobject,
   t : Double,
+) -> @mobject.Mobject {
+  self.at_env(start, t, Env::default())
+}
+
+///|
+/// State of the animation at absolute time `t` under `env`.
+pub fn Animation::at_env(
+  self : Animation,
+  start : @mobject.Mobject,
+  t : Double,
+  env : Env,
 ) -> @mobject.Mobject {
   let progress = if self.duration <= 0.0 {
     1.0
@@ -88,5 +103,5 @@ pub fn Animation::at(
       p
     }
   }
-  (self.update)(start, (self.easing)(progress))
+  (self.update)(start, (self.easing)(progress), env)
 }

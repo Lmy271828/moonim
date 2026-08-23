@@ -57,10 +57,11 @@ moonim 不做"另一个 Manim"。Manim 的生态位是本地 Python 脚本 + 离
   编码进 URL hash 分享——分享的链接无需携带任何运行时状态，这正是
   纯函数内核的红利。内核不感知 JS，外壳只是构造调用的转发层。
 - **交互 env**：交互状态（playhead、相机、拖拽偏移、指针位置）集中在
-  一个小而明确的 env 结构中，作为参数参与帧求值（动画 update 由
-  `(start, p)` 演进为 `(start, p, env)` 或等价机制）。同输入同输出，
-  纯度保持；manimgl 的 updater 原地 mutation 机制不引入——不移植的
-  是 mutation，不是交互能力。
+  一个小而明确的 env 结构中，作为参数参与帧求值（已实现：`Env`
+  携带指针位置与按键状态，`Animation` 的 update 签名为
+  `(start, p, env)`，`Scene::render_at_env` 逐层下传，`render_at` 即
+  默认 env 的特例）。同输入同输出，纯度保持；manimgl 的 updater 原地
+  mutation 机制不引入——不移植的是 mutation，不是交互能力。
 - **相机零成本变换**：pan/zoom 是最高频交互，映射为 SVG 根元素的
   `viewBox` / CSS transform，由浏览器合成器承担，不触发引擎重渲染。
   （已在 playground 实现：拖拽平移、以指针为锚点的滚轮缩放、双击复位；

@@ -30,7 +30,7 @@ pub fn Animation::transform_matching(
 ) -> Animation {
   let memo : Ref[MatchPlan?] = { val: None }
   Animation::new(
-    fn(start, p) {
+    fn(start, p, _env) {
       if p <= 0.0 {
         start
       } else if p >= 1.0 {

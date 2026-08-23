@@ -39,6 +39,15 @@
 - `playground/`：交互外壳第一步——相机 pan/zoom（拖拽平移、指针锚点
   滚轮缩放、双击复位），纯 viewBox 变换，零引擎开销（design.md
   「在线开发与交互外壳」）。
+- 交互 env（design.md「在线开发与交互外壳」，第二步）：
+  - `anim`：新增 `Env`（指针场景坐标 + 按键状态）；`Animation` 的
+    update 签名由 `(start, p)` 演进为 `(start, p, env)`（**不兼容变更**，
+    仅影响直接调用 `Animation::new` 的代码）；新增
+    `Scene::render_at_env` / `Animation::at_env`，`render_at` /
+    `at` 即默认 env（无交互）的特例，既有行为不变；
+  - `playground`：页面把指针位置换算为场景坐标（含相机 viewBox 与
+    y 轴翻转）逐帧传入；新增 `pointer` 演示场景（圆点跟随指针、按住
+    放大圆环）。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep

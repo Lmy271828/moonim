@@ -46,24 +46,35 @@ pub fn Scene::duration(self : Scene) -> Double {
 }
 
 ///|
-/// State of the whole scene at time `t`.
+/// State of the whole scene at time `t` under the default environment.
 pub fn Scene::render_at(self : Scene, t : Double) -> @mobject.Mobject {
+  self.render_at_env(t, Env::default())
+}
+
+///|
+/// State of the whole scene at time `t` under the interaction environment
+/// `env` (see `Env`). Still pure: same (scene, t, env), same frame.
+pub fn Scene::render_at_env(
+  self : Scene,
+  t : Double,
+  env : Env,
+) -> @mobject.Mobject {
   let results : Array[@mobject.Mobject] = []
   for layer in self.layers {
-    results.push(render_layer_at(layer, t))
+    results.push(render_layer_at(layer, t, env))
   }
   Group(results)
 }
 
 ///|
-fn render_layer_at(layer : Layer, t : Double) -> @mobject.Mobject {
+fn render_layer_at(layer : Layer, t : Double, env : Env) -> @mobject.Mobject {
   let mut current = layer.base
   let mut elapsed = 0.0
   for step in layer.steps {
     if t <= elapsed + step.duration {
-      return step.at(current, t - elapsed)
+      return step.at_env(current, t - elapsed, env)
     }
-    current = step.at(current, step.duration)
+    current = step.at_env(current, step.duration, env)
     elapsed += step.duration
   }
   current

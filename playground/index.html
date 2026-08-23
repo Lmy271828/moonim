@@ -116,6 +116,7 @@
           <option value="morph">morph（圆变方）</option>
           <option value="formula">formula（单公式）</option>
           <option value="texmorph" selected>texmorph（公式 A → 公式 B）</option>
+          <option value="pointer">pointer（跟随指针，env 演示）</option>
         </optgroup>
         <optgroup label="性能套件（确定性）">
           <option value="bench-light">bench-light（轻量）</option>
@@ -164,8 +165,7 @@
 
 <div class="hint">
   <kbd>空格</kbd> 播放/暂停 · <kbd>←</kbd><kbd>→</kbd> ±0.05s（<kbd>Shift</kbd> ±0.5s）· <kbd>L</kbd> 循环 ·
-  拖拽平移 · 滚轮缩放 · 双击复位 ·
-  性能套件是确定性场景，用于跨版本对比帧率
+  拖拽平移 · 滚轮缩放 · 双击复位 · pointer 场景：移动指针跟随，按住放大圆环
 </div>
 
 <canvas id="canvas" width="960" height="540"></canvas>
@@ -194,7 +194,9 @@ function prepareScene() {
 }
 
 function drawFrame(tt) {
-  const err = globalThis.moonim.frame(tt);
+  const err = globalThis.moonim.frame(
+    tt, pointer.x, pointer.y, pointer.active, pointer.down,
+  );
   if (err) {
     status.textContent = err;
     return null;
@@ -257,26 +259,62 @@ function setLiveViewBox() {
   }
 }
 
+// --- pointer env: page tracks the pointer in scene coordinates (y-up)
+// and passes it into every frame; camera (viewBox) is accounted for, so
+// the pointer tracks content correctly even while panned/zoomed.
+let pointer = { x: 0, y: 0, active: false, down: false };
+
+function updatePointer(e) {
+  const rect = stage.getBoundingClientRect();
+  const fx = (e.clientX - rect.left) / rect.width;
+  const fy = (e.clientY - rect.top) / rect.height;
+  if (fx < 0 || fx > 1 || fy < 0 || fy > 1 || !camDefault) {
+    pointer.active = false;
+    return;
+  }
+  const vb = cam || camDefault;
+  // viewBox space is y-down; scene space is y-up (the svg flips y with a
+  // translate+scale group), so un-flip with the full canvas height.
+  pointer.x = vb.x + fx * vb.w;
+  pointer.y = camDefault.h - (vb.y + fy * vb.h);
+  pointer.active = true;
+  pointer.down = (e.buttons & 1) === 1;
+}
+
 let drag = null;
 stage.addEventListener("pointerdown", (e) => {
   if (!camDefault) return;
   stage.setPointerCapture(e.pointerId);
+  updatePointer(e);
+  if (!playing) drawFrame(t);
   drag = { px: e.clientX, py: e.clientY, cam: Object.assign({}, cam || camDefault) };
 });
 stage.addEventListener("pointermove", (e) => {
-  if (!drag) return;
-  // Grab-and-drag: content follows the cursor, so the viewBox moves the
-  // opposite way (viewBox space is y-down, matching pointer deltas).
-  const spp = drag.cam.w / stage.getBoundingClientRect().width;
-  cam = {
-    x: drag.cam.x - (e.clientX - drag.px) * spp,
-    y: drag.cam.y - (e.clientY - drag.py) * spp,
-    w: drag.cam.w,
-    h: drag.cam.h,
-  };
-  setLiveViewBox();
+  updatePointer(e);
+  if (drag) {
+    // Grab-and-drag: content follows the cursor, so the viewBox moves the
+    // opposite way (viewBox space is y-down, matching pointer deltas).
+    const spp = drag.cam.w / stage.getBoundingClientRect().width;
+    cam = {
+      x: drag.cam.x - (e.clientX - drag.px) * spp,
+      y: drag.cam.y - (e.clientY - drag.py) * spp,
+      w: drag.cam.w,
+      h: drag.cam.h,
+    };
+    setLiveViewBox();
+  }
+  if (!playing) drawFrame(t);
 });
-stage.addEventListener("pointerup", () => (drag = null));
+stage.addEventListener("pointerup", (e) => {
+  drag = null;
+  updatePointer(e);
+  if (!playing) drawFrame(t);
+});
+stage.addEventListener("pointerleave", () => {
+  pointer.active = false;
+  pointer.down = false;
+  if (!playing) drawFrame(t);
+});
 stage.addEventListener("wheel", (e) => {
   e.preventDefault();
   if (!camDefault) return;
@@ -407,7 +445,7 @@ $("record").onclick = async () => {
   rec.start();
   for (let i = 0, n = Math.round(dur * fps); i <= n; i++) {
     const tt = Math.min(i / fps, dur);
-    const err = globalThis.moonim.frame(tt);
+    const err = globalThis.moonim.frame(tt, 0, 0, false, false);
     if (err) {
       status.textContent = err;
       rec.stop();
@@ -468,7 +506,7 @@ async function runBench() {
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < N; i++) {
         const tt = d * i / (N - 1);
-        const err = globalThis.moonim.frame(tt);
+        const err = globalThis.moonim.frame(tt, 0, 0, false, false);
         if (err) { status.textContent = err; return; }
         const rMs = globalThis.moonim.last_render_ms();
         const sMs = globalThis.moonim.last_svg_ms();
