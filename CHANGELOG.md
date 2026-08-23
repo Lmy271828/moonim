@@ -72,6 +72,19 @@
     安全塌缩）构造器；
   - `playground`：新增 `graph` 场景（坐标系淡入、正弦曲线书写、圆点
     沿曲线运动、箭头指向曲线上一点）。
+- 动画原语迁移批次 4+5（注意力引导族与杂项，对照 manimlib
+  `indication.py` / `fading.py` / `growing.py` / `composition.py` /
+  `numbers.py` 子集）：
+  - `mobject`：`surrounding_rectangle`（shape matcher）；
+  - `anim`：`indicate`（缩放+变色脉冲，there_and_back）、
+    `circumscribe`（圈注：先弧长书写外框再淡出）、`flash`（辐射闪光）、
+    `focus_on`（圆环+圆点聚焦）——均为叠加式动画，base 原样穿过、
+    p=1 精确还原；`fade_in_and_shift` / `fade_out_and_shift` /
+    `spin_in_from_nothing`；`Scene::add_lagged`（LaggedStart 错峰）；
+  - `graph`：`count`（ChangingDecimal：逐帧排版 lerp 取整的数字，
+    CachedRenderer 保证每个数字只排版一次）；
+  - `playground`：新增 `attention` 场景（脉冲 + 圈注 + 闪光 + 聚焦 +
+    计数器）。
 - 动画原语迁移批次 0+1（对照 manimlib `utils/rate_functions.py` 与
   animation 原语）：
   - `anim`：速率函数族——`smooth` 修正为 manimlib 的 smootherstep

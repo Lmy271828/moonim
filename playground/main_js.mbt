@@ -279,6 +279,51 @@ fn build_scene(
 ) -> Result[@anim.Scene, String] {
   match scene_id {
     "bench-light" | "bench-standard" | "bench-heavy" => build_bench(scene_id)
+    "attention" => {
+      // Indication-family demo: the formula pulses (indicate), gets
+      // circumscribed, a flash fires at its left, focus_on converges at
+      // its right, and a counter ticks 0 -> 100 below.
+      let scene = @anim.Scene::new()
+      let renderer = @tex.MiniTex::new()
+      match tex_at(renderer, a, 56.0, @math.Vec2::new(480.0, 320.0)) {
+        Err(e) => return Err(e)
+        Ok(m) =>
+          scene.add_layer(
+            @anim.Layer::new(m, [
+              @anim.Animation::wait(duration=0.5),
+              @anim.Animation::indicate(duration=1.2),
+              @anim.Animation::wait(duration=0.3),
+              @anim.Animation::circumscribe(duration=1.5),
+              @anim.Animation::wait(duration=1.5),
+            ]),
+          )
+      }
+      let empty = @mobject.Mobject::group([])
+      scene.add_layer(
+        @anim.Layer::new(empty, [
+          @anim.Animation::wait(duration=2.0),
+          @anim.Animation::flash(@math.Vec2::new(240.0, 320.0), duration=1.5),
+          @anim.Animation::wait(duration=1.5),
+        ]),
+      )
+      scene.add_layer(
+        @anim.Layer::new(empty, [
+          @anim.Animation::wait(duration=3.0),
+          @anim.Animation::focus_on(@math.Vec2::new(720.0, 320.0), duration=1.5),
+          @anim.Animation::wait(duration=0.5),
+        ]),
+      )
+      let counter_probe = @mobject.Mobject::vmobject(
+        @geom.Path::circle(@math.Vec2::new(480.0, 130.0), 1.0),
+      )
+      scene.add_layer(
+        @anim.Layer::new(counter_probe, [
+          @graph.count(0.0, 100.0, duration=4.0, easing=@anim.linear),
+          @anim.Animation::wait(duration=1.0),
+        ]),
+      )
+      Ok(scene)
+    }
     "graph" => {
       // Teaching-content demo: axes fade in, a sine curve writes itself,
       // a dot rides the curve, and an arrow marks a point on it.

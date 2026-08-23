@@ -67,3 +67,42 @@ pub fn Animation::fade_to_color(
     easing~,
   )
 }
+
+///|
+/// Fade in while drifting in from `direction` (Manim FadeInAndShift):
+/// starts offset by `direction` and slides home.
+pub fn Animation::fade_in_and_shift(
+  direction : @math.Vec2,
+  duration~ : Double,
+  easing? : (Double) -> Double = smooth,
+) -> Animation {
+  Animation::new(
+    fn(start, p, _env) {
+      start
+      .transform(
+        @math.Mat3::translate(direction.x * (1.0 - p), direction.y * (1.0 - p)),
+      )
+      .with_opacity(p)
+    },
+    duration~,
+    easing~,
+  )
+}
+
+///|
+/// Fade out while drifting along `direction` (Manim FadeOutAndShift).
+pub fn Animation::fade_out_and_shift(
+  direction : @math.Vec2,
+  duration~ : Double,
+  easing? : (Double) -> Double = smooth,
+) -> Animation {
+  Animation::new(
+    fn(start, p, _env) {
+      start
+      .transform(@math.Mat3::translate(direction.x * p, direction.y * p))
+      .with_opacity(1.0 - p)
+    },
+    duration~,
+    easing~,
+  )
+}

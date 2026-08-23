@@ -325,3 +325,110 @@ test "move_along_path displaces by the path point" {
     None => abort("expected bbox")
   }
 }
+
+///|
+test "indicate pulses scale and color, endpoints exact" {
+  let rect = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(-1.0, -1.0), 2.0, 2.0),
+  )
+  let anim = Animation::indicate(duration=1.0) // there_and_back easing
+  assert_eq(anim.at(rect, 0.0), rect)
+  assert_eq(anim.at(rect, 1.0), rect)
+  // Mid-pulse: bbox grew, fill lerped toward yellow.
+  match anim.at(rect, 0.5) {
+    VMobject(fill=Some(c), ..) =>
+      // white -> yellow: blue channel collapses, green dips toward 0.85
+      assert_true(c.b < 0.01 && c.g < 0.95 && c.g > 0.8)
+    _ => abort("expected vmobject")
+  }
+  match anim.at(rect, 0.5).bbox() {
+    Some(b) => assert_true(b.width() > 2.1)
+    None => abort("expected bbox")
+  }
+}
+
+///|
+test "circumscribe overlays a rectangle mid-animation" {
+  let dot = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let anim = Animation::circumscribe(duration=2.0)
+  match anim.at(dot, 1.0) {
+    Group(children) => assert_eq(children.length(), 2) // base + rect overlay
+    _ => abort("expected group")
+  }
+  // Endpoints leave the base untouched.
+  assert_eq(anim.at(dot, 0.0), dot)
+  assert_eq(anim.at(dot, 2.0), dot)
+}
+
+///|
+test "flash and focus_on are pure overlays" {
+  let dot = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let flash = Animation::flash(@math.Vec2::new(0.0, 0.0), duration=1.0)
+  let focus = Animation::focus_on(@math.Vec2::new(5.0, 5.0), duration=1.0)
+  for anim in [flash, focus] {
+    assert_eq(anim.at(dot, 0.0), dot)
+    assert_eq(anim.at(dot, 1.0), dot)
+    match anim.at(dot, 0.5) {
+      Group(children) => assert_true(children.length() >= 2)
+      _ => abort("expected overlay group")
+    }
+  }
+}
+
+///|
+test "fade_in_and_shift starts offset and transparent" {
+  let rect = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(0.0, 0.0), 1.0, 1.0),
+  )
+  let anim = Animation::fade_in_and_shift(
+    @math.Vec2::new(0.0, 10.0),
+    duration=1.0,
+    easing=linear,
+  )
+  match anim.at(rect, 0.0) {
+    VMobject(fill=Some(c), ..) => assert_eq(c.a, 0.0)
+    _ => abort("expected vmobject")
+  }
+  match anim.at(rect, 0.0).bbox() {
+    Some(b) => assert_eq(b.min.y, 10.0) // fully offset
+    None => abort("expected bbox")
+  }
+  assert_eq(anim.at(rect, 1.0), rect)
+}
+
+///|
+test "spin_in_from_nothing grows while unwinding" {
+  let rect = @mobject.Mobject::vmobject(
+    @geom.Path::rect(@math.Vec2::new(-1.0, -0.5), 2.0, 1.0),
+  )
+  let anim = Animation::spin_in_from_nothing(duration=1.0, easing=linear)
+  assert_eq(anim.at(rect, 1.0), rect)
+  // Midway: half scale plus half the rotation still unwinding.
+  match anim.at(rect, 0.5).bbox() {
+    Some(b) => assert_true(b.width() < 1.5 && b.height() > 0.5)
+    None => abort("expected bbox")
+  }
+}
+
+///|
+test "add_lagged staggers identical animations" {
+  let bases = [
+    @mobject.Mobject::vmobject(
+      @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+    ),
+    @mobject.Mobject::vmobject(
+      @geom.Path::circle(@math.Vec2::new(3.0, 0.0), 1.0),
+    ),
+    @mobject.Mobject::vmobject(
+      @geom.Path::circle(@math.Vec2::new(6.0, 0.0), 1.0),
+    ),
+  ]
+  let scene = Scene::new()
+  scene.add_lagged(bases, fn(_i) { Animation::fade_in(duration=1.0) }, lag=0.5)
+  assert_eq(scene.layers.length(), 3)
+  assert_eq(scene.duration(), 2.0) // last layer: 2*0.5 wait + 1.0 fade
+}

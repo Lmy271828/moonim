@@ -6,5 +6,6 @@ import {
   "lmy271828/moonim/math",
   "lmy271828/moonim/geom",
   "lmy271828/moonim/mobject",
+  "lmy271828/moonim/anim",
   "lmy271828/moonim/tex",
 }

@@ -61,3 +61,24 @@ test "plot endpoints land on the curve" {
   assert_true((last.x - 20.0).abs() < 1.0e-9)
   assert_true((last.y - 40.0).abs() < 1.0e-9)
 }
+
+///|
+test "count typesets the lerped value, wider at two digits" {
+  let probe = @mobject.Mobject::vmobject(
+    @geom.Path::circle(@math.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let anim = count(0.0, 10.0, duration=1.0, easing=@anim.linear)
+  let w = fn(t) {
+    match anim.at(probe, t).bbox() {
+      Some(b) => b.width()
+      None => 0.0
+    }
+  }
+  // "0" vs "10": two digits are wider than one.
+  assert_true(w(1.0) > w(0.0))
+  // The number stays centered on the start mobject.
+  match anim.at(probe, 0.5).bbox() {
+    Some(b) => assert_true(b.center().x.abs() < 1.0e-9)
+    None => abort("expected bbox")
+  }
+}

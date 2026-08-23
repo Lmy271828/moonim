@@ -79,3 +79,23 @@ fn render_layer_at(layer : Layer, t : Double, env : Env) -> @mobject.Mobject {
   }
   current
 }
+
+///|
+/// Add one layer per base mobject, each playing `make_anim(i)` after
+/// `i * lag` seconds of initial wait (manimlib LaggedStart): the standard
+/// staggered-entrance combinator.
+pub fn Scene::add_lagged(
+  self : Scene,
+  bases : Array[@mobject.Mobject],
+  make_anim : (Int) -> Animation,
+  lag? : Double = 0.1,
+) -> Unit {
+  for i, base in bases {
+    self.add_layer(
+      Layer::new(base, [
+        Animation::wait(duration=i.to_double() * lag),
+        make_anim(i),
+      ]),
+    )
+  }
+}

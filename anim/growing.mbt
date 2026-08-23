@@ -101,3 +101,29 @@ pub fn Animation::rotate(
     easing~,
   )
 }
+
+///|
+/// Grow from zero while unwinding `angle` of rotation (Manim
+/// SpinInFromNothing): the mobject spins in from nothing around its own
+/// bbox center.
+pub fn Animation::spin_in_from_nothing(
+  angle? : Double = @core_math.PI,
+  duration~ : Double,
+  easing? : (Double) -> Double = smooth,
+) -> Animation {
+  Animation::new(
+    fn(start, p, _env) {
+      let center = match start.bbox() {
+        Some(b) => b.center()
+        None => @math.Vec2::new(0.0, 0.0)
+      }
+      let mat = @math.Mat3::translate(center.x, center.y)
+        .mul(@math.Mat3::rotate(angle * (1.0 - p)))
+        .mul(@math.Mat3::scale(p, p))
+        .mul(@math.Mat3::translate(-center.x, -center.y))
+      start.transform(mat)
+    },
+    duration~,
+    easing~,
+  )
+}

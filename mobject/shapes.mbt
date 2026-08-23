@@ -50,3 +50,27 @@ pub fn Mobject::arrow(
     VMobject(path=tip, fill=Some(color), stroke=None),
   ])
 }
+
+///|
+/// A stroked rectangle around the mobject's bbox, padded by `padding`
+/// (manimlib SurroundingRectangle). An empty bbox yields an empty group.
+pub fn Mobject::surrounding_rectangle(
+  m : Mobject,
+  padding? : Double = 12.0,
+  color? : @math.Color = @math.Color::white(),
+  width? : Double = 2.0,
+) -> Mobject {
+  match m.bbox() {
+    Some(b) =>
+      VMobject(
+        path=@geom.Path::rect(
+          @math.Vec2::new(b.min.x - padding, b.min.y - padding),
+          b.width() + 2.0 * padding,
+          b.height() + 2.0 * padding,
+        ),
+        fill=None,
+        stroke=Some((color, width)),
+      )
+    None => Group([])
+  }
+}
