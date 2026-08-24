@@ -16,7 +16,7 @@ playground that renders frames live via the JS backend.
 灵感来自 [Manim](https://github.com/3b1b/manim)，但架构上是独立重写（详见
 [docs/design.md](docs/design.md)）。
 
-> 当前版本 v0.2.0：69 个测试全过、全目标 check 零警告，示例与浏览器
+> 当前版本 v0.2.1：69 个测试全过、全目标 check 零警告，示例与浏览器
 > playground 可运行。目标规模与边界见下文「功能边界」一节。
 
 ## 快速开始

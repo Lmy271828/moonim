@@ -2,6 +2,13 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026-08-24
+
+### 修复
+
+- 新增根包（`moon.pkg` + `moonim.mbt` 模块导览文档）：mooncakes.io 服务端
+  文档构建（moondoc）要求模块存在根包，0.2.0 因此构建失败。
+
 ## [0.2.0] - 2026-08-24
 
 首个 mooncakes.io 发布版本。
