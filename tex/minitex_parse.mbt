@@ -68,7 +68,7 @@ fn Parser::parse_group(self : Parser) -> Result[Array[Node], RenderError] {
 /// Read a control word after a backslash, e.g. `\frac` -> "frac".
 fn Parser::read_command(self : Parser) -> String {
   self.pos += 1 // consume '\\'
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while self.peek() is Some(c) && is_ascii_letter(c) {
     buf.write_char(c)
     self.pos += 1

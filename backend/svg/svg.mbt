@@ -7,7 +7,7 @@ pub fn render_svg(
   width? : Double = 960.0,
   height? : Double = 540.0,
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_string(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 \{num(width)} \{num(height)}\">\n",
   )
@@ -61,7 +61,7 @@ fn render_mobject(sb : StringBuilder, m : @mobject.Mobject) -> Unit {
 ///|
 /// SVG path data for a path, in scene coordinates.
 pub fn path_d(path : @geom.Path) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for seg in path.segments {
     match seg {
       MoveTo(p) => sb.write_string("M \{num(p.x)} \{num(p.y)} ")
