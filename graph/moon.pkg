@@ -3,9 +3,9 @@
 // `functions.py` subset). Tick labels are typeset by MiniTex.
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/geom",
-  "lmy271828/moonim/mobject",
-  "lmy271828/moonim/anim",
-  "lmy271828/moonim/tex",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/geom",
+  "Lmy271828/moonim/mobject",
+  "Lmy271828/moonim/anim",
+  "Lmy271828/moonim/tex",
 }

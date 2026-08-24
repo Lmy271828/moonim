@@ -3,11 +3,11 @@
 // Pipe a frame into a file to view it:  moon run examples/morph > frames.txt
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/geom",
-  "lmy271828/moonim/mobject",
-  "lmy271828/moonim/anim",
-  "lmy271828/moonim/backend/svg",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/geom",
+  "Lmy271828/moonim/mobject",
+  "Lmy271828/moonim/anim",
+  "Lmy271828/moonim/backend/svg",
 }
 
 pkgtype(kind: "executable")

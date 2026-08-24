@@ -1,6 +1,6 @@
 # moonim
 
-[![mooncakes](https://img.shields.io/badge/mooncakes-lmy271828%2Fmoonim-blue)](https://mooncakes.io/docs/lmy271828/moonim)
+[![mooncakes](https://img.shields.io/badge/mooncakes-Lmy271828%2Fmoonim-blue)](https://mooncakes.io/docs/Lmy271828/moonim)
 [![CI](https://github.com/Lmy271828/moonim/actions/workflows/ci.yml/badge.svg)](https://github.com/Lmy271828/moonim/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
@@ -40,19 +40,19 @@ moon run examples/morph > frames.txt
 
 ## 模块结构
 
-发布单位为整个 module（`moon add lmy271828/moonim`），每个顶层目录是一个
+发布单位为整个 module（`moon add Lmy271828/moonim`），每个顶层目录是一个
 独立的 `mooncakes` 包，消费者按包子路径单独导入、只取所需：
 
 | 包 | 导入路径 | 职责 |
 |---|---|---|
-| `math/` | `lmy271828/moonim/math` | Vec2 / Mat3 仿射变换 / Color / BBox |
-| `geom/` | `lmy271828/moonim/geom` | 三次贝塞尔、路径、子路径拆分与点数对齐（`Path::align`）、弧长裁剪（`Path::trim` / `point_at_proportion` / `to_dashed`）、三角化（earcut 移植）、描边展开 |
-| `mobject/` | `lmy271828/moonim/mobject` | 场景图 ADT：`VMobject` / `Group` / `Tex`（带符号标签），部件枚举与 `same_shape`，`line` / `arrow` 构造器 |
-| `anim/` | `lmy271828/moonim/anim` | `Interpolable` trait、速率函数族（smooth/rush/wiggle/…）、`Animation`（`transform_to` / `transform_matching` / fade / grow / rotate / `show_creation` / `unwrite` / `move_along_path` / indicate 族 / `add_lagged`）、交互 `Env`、`Scene` 时间轴 |
-| `graph/` | `lmy271828/moonim/graph` | 坐标系与函数图像：`axes` / `number_line`（刻度 + MiniTex 数字标签）、`plot`（函数采样成路径）、`count`（数字滚动）、`map_point` 数据→场景映射 |
-| `tex/` | `lmy271828/moonim/tex` | `FormulaRenderer` trait（扩展点）+ `MiniTex` 子集排版器 + `CachedRenderer` 记忆化包装 |
-| `cache/` | `lmy271828/moonim/cache` | 显式键控 LRU 记忆化（见 design.md「缓存层」） |
-| `backend/svg/` | `lmy271828/moonim/backend/svg` | Mobject 树 → SVG 文档序列化 |
+| `math/` | `Lmy271828/moonim/math` | Vec2 / Mat3 仿射变换 / Color / BBox |
+| `geom/` | `Lmy271828/moonim/geom` | 三次贝塞尔、路径、子路径拆分与点数对齐（`Path::align`）、弧长裁剪（`Path::trim` / `point_at_proportion` / `to_dashed`）、三角化（earcut 移植）、描边展开 |
+| `mobject/` | `Lmy271828/moonim/mobject` | 场景图 ADT：`VMobject` / `Group` / `Tex`（带符号标签），部件枚举与 `same_shape`，`line` / `arrow` 构造器 |
+| `anim/` | `Lmy271828/moonim/anim` | `Interpolable` trait、速率函数族（smooth/rush/wiggle/…）、`Animation`（`transform_to` / `transform_matching` / fade / grow / rotate / `show_creation` / `unwrite` / `move_along_path` / indicate 族 / `add_lagged`）、交互 `Env`、`Scene` 时间轴 |
+| `graph/` | `Lmy271828/moonim/graph` | 坐标系与函数图像：`axes` / `number_line`（刻度 + MiniTex 数字标签）、`plot`（函数采样成路径）、`count`（数字滚动）、`map_point` 数据→场景映射 |
+| `tex/` | `Lmy271828/moonim/tex` | `FormulaRenderer` trait（扩展点）+ `MiniTex` 子集排版器 + `CachedRenderer` 记忆化包装 |
+| `cache/` | `Lmy271828/moonim/cache` | 显式键控 LRU 记忆化（见 design.md「缓存层」） |
+| `backend/svg/` | `Lmy271828/moonim/backend/svg` | Mobject 树 → SVG 文档序列化 |
 | `playground/` | — | 浏览器 playground（js 目标构建 + 静态页面，见下节） |
 | `examples/` | — | 可执行示例（CI 中实际运行并校验输出） |
 

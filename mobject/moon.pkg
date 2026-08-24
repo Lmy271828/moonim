@@ -1,7 +1,7 @@
 // Package: the mobject scene graph (VMobject / Group / Tex).
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/geom",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/geom",
   "moonbitlang/core/debug",
 }

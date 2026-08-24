@@ -2,7 +2,7 @@
 // SVG document. Pure computation, so it runs in CI and golden tests.
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/geom",
-  "lmy271828/moonim/mobject",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/geom",
+  "Lmy271828/moonim/mobject",
 }

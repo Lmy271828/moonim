@@ -2,9 +2,9 @@
 // Scene timeline).
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/geom",
-  "lmy271828/moonim/mobject",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/geom",
+  "Lmy271828/moonim/mobject",
   "moonbitlang/core/math" @core_math,
   "moonbitlang/core/debug",
 }

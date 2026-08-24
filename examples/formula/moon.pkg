@@ -2,10 +2,10 @@
 // Run:  moon run examples/formula
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/mobject",
-  "lmy271828/moonim/tex",
-  "lmy271828/moonim/backend/svg",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/mobject",
+  "Lmy271828/moonim/tex",
+  "Lmy271828/moonim/backend/svg",
 }
 
 pkgtype(kind: "executable")

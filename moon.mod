@@ -2,7 +2,7 @@
 // Learn more about moon.mod configuration:
 // https://docs.moonbitlang.com/en/latest/toolchain/moon/module.html
 
-name = "lmy271828/moonim"
+name = "Lmy271828/moonim"
 
 version = "0.2.0"
 

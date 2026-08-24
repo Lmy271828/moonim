@@ -3,8 +3,8 @@
 // `MiniTex` is the built-in subset renderer shipped in v0.1.
 
 import {
-  "lmy271828/moonim/math",
-  "lmy271828/moonim/geom",
-  "lmy271828/moonim/cache",
+  "Lmy271828/moonim/math",
+  "Lmy271828/moonim/geom",
+  "Lmy271828/moonim/cache",
   "moonbitlang/core/debug",
 }
