@@ -1,12 +1,23 @@
 # moonim
 
+[![mooncakes](https://img.shields.io/badge/mooncakes-lmy271828%2Fmoonim-blue)](https://mooncakes.io/docs/lmy271828/moonim)
+[![CI](https://github.com/Lmy271828/moonim/actions/workflows/ci.yml/badge.svg)](https://github.com/Lmy271828/moonim/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+A mathematical animation engine kernel in pure MoonBit: cubic bezier geometry,
+a mobject scene graph, typed animation combinators, a MiniTex formula
+typesetting subset, and an SVG backend. Inspired by
+[Manim](https://github.com/3b1b/manim), rewritten from scratch with a pure,
+seekable functional timeline (`Scene::render_at(t)`) and an in-browser
+playground that renders frames live via the JS backend.
+
 一个纯 MoonBit 实现的**数学动画引擎内核**（mathematical animation engine kernel）：
 贝塞尔几何、Mobject 场景图、类型化动画组合子与公式子集排版，输出 SVG 帧序列。
 灵感来自 [Manim](https://github.com/3b1b/manim)，但架构上是独立重写（详见
 [docs/design.md](docs/design.md)）。
 
-> 当前版本 v0.1.0：可构建、可测试、示例可运行的工程骨架。
-> 目标规模与边界见下文「功能边界」一节。
+> 当前版本 v0.2.0：69 个测试全过、全目标 check 零警告，示例与浏览器
+> playground 可运行。目标规模与边界见下文「功能边界」一节。
 
 ## 快速开始
 
@@ -29,7 +40,8 @@ moon run examples/morph > frames.txt
 
 ## 模块结构
 
-每个顶层目录是一个独立的 `mooncakes` 包，可单独发布、单独复用：
+发布单位为整个 module（`moon add lmy271828/moonim`），每个顶层目录是一个
+独立的 `mooncakes` 包，消费者按包子路径单独导入、只取所需：
 
 | 包 | 导入路径 | 职责 |
 |---|---|---|

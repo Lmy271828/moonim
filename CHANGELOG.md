@@ -2,7 +2,9 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [0.2.0] - 2026-08-24
+
+首个 mooncakes.io 发布版本。
 
 ### 新增
 
